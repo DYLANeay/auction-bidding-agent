@@ -1,0 +1,64 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dnd_auction_game"
+version = "0.6.0"
+description = "An auction game for trading-bots based on d&d die rolls."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+authors = [
+  { name = "Sondre 'Ooki' Glimsdal", email = "sondre.glimsdal@gmail.com" },
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Science/Research",
+  "Intended Audience :: Developers",
+  "Programming Language :: Python",
+  "Topic :: Scientific/Engineering",
+  "Operating System :: Microsoft :: Windows",
+  "Operating System :: POSIX",
+  "Operating System :: Unix",
+  "Operating System :: MacOS",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+]
+
+dependencies = [
+  "py-machineid>=0.4.5",
+  "fastapi",
+  "uvicorn>=0.35.0",
+  "websockets>=14",
+  "Jinja2",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/ooki/dnd_auction_game"
+"Bug Tracker" = "https://github.com/ooki/dnd_auction_game/issues"
+"Documentation" = "https://github.com/ooki/dnd_auction_game"
+"Source Code" = "https://github.com/ooki/dnd_auction_game"
+
+[dependency-groups]
+dev = [
+  "anyio<4.15", # Starlette's current TestClient still imports a deprecated AnyIO alias.
+  "httpx2", # Required by Starlette's TestClient.
+  "pytest",
+  "pytest-asyncio",
+]
+
+[tool.pytest.ini_options]
+asyncio_default_fixture_loop_scope = "function"
+
+[tool.setuptools]
+zip-safe = false
+
+[tool.setuptools.packages.find]
+include = ["dnd_auction_game", "dnd_auction_game.templates"]
+
+[tool.setuptools.package-data]
+dnd_auction_game = ["templates/*.html"]
