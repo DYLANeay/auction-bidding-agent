@@ -31,3 +31,6 @@ Thumbs.db
 
 # Environnement
 .env
+
+# Documentation personnelle (guide PDF, plan)
+docs/
