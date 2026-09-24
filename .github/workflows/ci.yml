@@ -12,6 +12,6 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       # astral is the company behind uv
-      - uses: astral-sh/setup-uv@v10
+      - uses: astral-sh/setup-uv@v10.2.0
       - run: make install
       - run: make check
