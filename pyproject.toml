@@ -23,3 +23,7 @@ packages = ["src/smaug"]         # our code lives in src/smaug
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]   # only our tests, never the teacher's tests in context/
+
+[tool.pyright]
+venvPath = "."
+venv = ".venv"   # so the editor finds the installed packages
