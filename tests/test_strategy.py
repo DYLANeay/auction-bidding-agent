@@ -1,4 +1,12 @@
-from smaug.agent.strategy import expected_value, market_price, round_price_per_point
+from dataclasses import replace
+
+from smaug.agent.config import DEFAULT_SETTINGS
+from smaug.agent.strategy import (
+    expected_value,
+    market_price,
+    reserve,
+    round_price_per_point,
+)
 
 
 def test_expected_value_of_known_auctions() -> None:
@@ -49,3 +57,32 @@ def test_market_price_uses_the_default_without_history() -> None:
 
 def test_market_price_resists_a_spike() -> None:
     assert market_price([38.0, 40.0, 1000.0], default_price=20.0) == 40.0
+
+
+def test_reserve_keeps_the_whole_bank_limit_mid_game() -> None:
+    assert reserve(bank_limit=5000, rounds_left=500, settings=DEFAULT_SETTINGS) == 5000
+
+
+def test_reserve_follows_the_reserve_factor() -> None:
+    half_savings = replace(DEFAULT_SETTINGS, reserve_factor=0.5)
+    assert reserve(bank_limit=5000, rounds_left=500, settings=half_savings) == 2500
+
+
+def test_reserve_melts_between_110_and_10_useful_rounds_left() -> None:
+    assert reserve(bank_limit=5000, rounds_left=111, settings=DEFAULT_SETTINGS) == 5000  # pas encore
+    assert reserve(bank_limit=5000, rounds_left=61, settings=DEFAULT_SETTINGS) == 2500  # à moitié
+    assert reserve(bank_limit=5000, rounds_left=12, settings=DEFAULT_SETTINGS) == 50
+    assert reserve(bank_limit=5000, rounds_left=11, settings=DEFAULT_SETTINGS) == 0  # fondue avant le pic
+
+
+def test_reserve_is_empty_on_the_last_useful_round_and_the_phantom_round() -> None:
+    assert reserve(bank_limit=5000, rounds_left=2, settings=DEFAULT_SETTINGS) == 0
+    assert reserve(bank_limit=5000, rounds_left=1, settings=DEFAULT_SETTINGS) == 0
+
+
+def test_reserve_survives_odd_settings() -> None:
+    # réglages qu'on pourrait taper par erreur depuis le TUI
+    no_finish = replace(DEFAULT_SETTINGS, endgame_finish_rounds=0)
+    assert reserve(bank_limit=5000, rounds_left=2, settings=no_finish) == 0
+    no_melt = replace(DEFAULT_SETTINGS, endgame_rounds=0)
+    assert reserve(bank_limit=5000, rounds_left=500, settings=no_melt) == 5000

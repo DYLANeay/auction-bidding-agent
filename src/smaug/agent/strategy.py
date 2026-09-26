@@ -2,6 +2,8 @@
 
 from statistics import median
 
+from smaug.agent.config import Settings
+
 
 def expected_value(auction: dict[str, int]) -> float:
     """Average points of an auction like 3d6+7"""
@@ -38,3 +40,20 @@ def market_price(price_history: list[float], default_price: float) -> float:
     if len(price_history) == 0:
         return default_price
     return median(price_history)
+
+
+def reserve(bank_limit: float, rounds_left: int, settings: Settings) -> float:
+    """Gold to keep at the bank this round"""
+    # le tout dernier tour envoyé n'est jamais traité par le serveur
+    useful_rounds_left = rounds_left - 1
+    if useful_rounds_left <= 1:
+        return 0.0
+
+    full_reserve = bank_limit * settings.reserve_factor
+
+    # l'épargne fond en ligne droite et atteint 0 avant le pic de fin de partie
+    melt_length = max(settings.endgame_rounds, 1)
+    kept_share = (useful_rounds_left - settings.endgame_finish_rounds) / melt_length
+    kept_share = min(kept_share, 1)
+    kept_share = max(kept_share, 0)
+    return full_reserve * kept_share

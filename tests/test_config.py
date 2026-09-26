@@ -9,7 +9,9 @@ def test_defaults_match_the_v1() -> None:
     assert DEFAULT_SETTINGS.min_expected_value == 2.0
     assert DEFAULT_SETTINGS.history_rounds == 20
     assert DEFAULT_SETTINGS.margin == 0.15
-    assert DEFAULT_SETTINGS.endgame_rounds == 50
+    assert DEFAULT_SETTINGS.endgame_rounds == 100
+    assert DEFAULT_SETTINGS.endgame_finish_rounds == 10
+    assert DEFAULT_SETTINGS.endgame_margin == 0.60
 
 
 def test_settings_cannot_be_changed_by_accident() -> None:
