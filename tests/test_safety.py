@@ -5,9 +5,13 @@ from smaug.agent.safety import (
     clean_bids,
     read_auction,
     read_auctions,
+    read_bank_state,
     read_bids,
+    read_gold,
+    read_number_list,
     read_prev_auctions,
     safe_decide,
+    to_number,
     to_whole_number,
 )
 
@@ -118,3 +122,48 @@ def test_read_functions_survive_garbage() -> None:
     for garbage in [None, 42, "text", [1, 2], {"a1": None}]:
         assert read_auctions(garbage) == {}
         assert read_prev_auctions(garbage) == {}
+
+
+def test_to_number_keeps_decimals() -> None:
+    assert to_number(1.05) == 1.05
+    assert to_number("2.5") == 2.5
+    assert to_number(float("nan")) is None
+
+
+def test_read_number_list_refuses_any_broken_value() -> None:
+    assert read_number_list([1000, 980.5]) == [1000.0, 980.5]
+    assert read_number_list([1000, "abc"]) is None
+    assert read_number_list([]) is None
+    assert read_number_list(None) is None
+
+
+def test_read_bank_state_builds_the_brain_format() -> None:
+    message = {
+        "remainder_gold_income": [1000, 990],
+        "remainder_bank_interest": [1.05, 1.04],
+        "remainder_bank_limit": [5000, 5100],
+    }
+    assert read_bank_state(message) == {
+        "gold_income_per_round": [1000.0, 990.0],
+        "bank_interest_per_round": [1.05, 1.04],
+        "bank_limit_per_round": [5000.0, 5100.0],
+    }
+
+
+def test_read_bank_state_refuses_a_broken_bank() -> None:
+    assert read_bank_state({}) is None
+    broken_limit = {
+        "remainder_gold_income": [1000],
+        "remainder_bank_interest": [1.05],
+        "remainder_bank_limit": [-5000],
+    }
+    assert read_bank_state(broken_limit) is None
+
+
+def test_read_gold_finds_our_gold_or_gives_up() -> None:
+    states = {"me": {"gold": 7200, "points": 30}, "other": {"gold": 100, "points": 5}}
+    assert read_gold(states, "me") == 7200
+    assert read_gold(states, "ghost") is None
+    assert read_gold({"me": {"gold": "rich"}}, "me") is None
+    assert read_gold({"me": {"gold": -10}}, "me") is None
+    assert read_gold(None, "me") is None

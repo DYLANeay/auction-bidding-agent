@@ -10,8 +10,9 @@ from smaug.agent.brain import Brain
 # « est-ce vraiment un nombre utilisable ? »
 
 
-def to_whole_number(value: Any) -> int | None:
-    """A plain Python int from any number, or None if it is not a usable number"""
+# but : transformer n'importe quelle valeur en nombre à virgule sûr, ou dire qu'elle est inutilisable
+def to_number(value: Any) -> float | None:
+    """A finite float from any number, or None if it is not a usable number"""
     # True et False sont des nombres pour Python, jamais pour nous
     if isinstance(value, bool):
         return None
@@ -21,6 +22,14 @@ def to_whole_number(value: Any) -> int | None:
         return None
     # rejette NaN et l'infini
     if not math.isfinite(number):
+        return None
+    return number
+
+
+def to_whole_number(value: Any) -> int | None:
+    """A plain Python int from any number, or None if it is not a usable number"""
+    number = to_number(value)
+    if number is None:
         return None
     return int(number)
 
@@ -142,3 +151,48 @@ def read_prev_auctions(raw: Any) -> dict[str, dict]:
             "bids": read_bids(raw_auction.get("bids")),
         }
     return prev_auctions
+
+
+# but : lire une liste de nombres, et la refuser entièrement au moindre élément cassé
+def read_number_list(raw: Any) -> list[float] | None:
+    """A non-empty list of usable numbers, or None"""
+    if not isinstance(raw, list) or len(raw) == 0:
+        return None
+    numbers = []
+    for raw_value in raw:
+        number = to_number(raw_value)
+        if number is None:
+            return None
+        numbers.append(number)
+    return numbers
+
+
+# but : assembler le futur de la banque (salaires, taux, plafonds) au format du cerveau, ou refuser le tour
+def read_bank_state(message: dict) -> dict[str, list] | None:
+    """The bank's future from the server message, or None if any part is broken"""
+    gold_income = read_number_list(message.get("remainder_gold_income"))
+    bank_interest = read_number_list(message.get("remainder_bank_interest"))
+    bank_limit = read_number_list(message.get("remainder_bank_limit"))
+    if gold_income is None or bank_interest is None or bank_limit is None:
+        return None
+    if bank_limit[0] < 0:
+        return None
+    return {
+        "gold_income_per_round": gold_income,
+        "bank_interest_per_round": bank_interest,
+        "bank_limit_per_round": bank_limit,
+    }
+
+
+# but : retrouver notre or parmi l'état de tous les joueurs, ou refuser le tour si on ne le trouve pas
+def read_gold(states: Any, agent_id: str) -> int | None:
+    """Our own gold from the players' states, or None if we cannot find it"""
+    if not isinstance(states, dict):
+        return None
+    our_state = states.get(agent_id)
+    if not isinstance(our_state, dict):
+        return None
+    gold = to_whole_number(our_state.get("gold"))
+    if gold is None or gold < 0:
+        return None
+    return gold
