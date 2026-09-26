@@ -34,3 +34,7 @@ Thumbs.db
 
 # Documentation personnelle (guide PDF, plan)
 docs/
+
+# notes and runtime files
+context/ai-maths.pdf
+logs/
