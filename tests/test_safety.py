@@ -1,6 +1,7 @@
 import numpy as np
 
-from smaug.agent.safety import clean_bids, to_whole_number
+from smaug.agent.brain import Brain
+from smaug.agent.safety import clean_bids, safe_decide, to_whole_number
 
 
 def test_whole_number_accepts_numbers_including_numpy() -> None:
@@ -36,3 +37,34 @@ def test_clean_bids_never_exceed_our_gold() -> None:
 def test_clean_bids_of_garbage_is_empty() -> None:
     assert clean_bids(None, {"a1"}, gold=1000) == {}
     assert clean_bids(["a1", 300], {"a1"}, gold=1000) == {}
+
+
+class BrokenBrain(Brain):
+    def decide(self, gold, auctions, prev_auctions, bank_state):
+        raise ZeroDivisionError("bug in the brain")
+
+
+class SloppyBrain(Brain):
+    def decide(self, gold, auctions, prev_auctions, bank_state):
+        return {"a1": np.float64(250.7), "ghost": 100, "a2": 99999}
+
+
+BANK_STATE = {
+    "gold_income_per_round": [1000] * 500,
+    "bank_interest_per_round": [1.05] * 500,
+    "bank_limit_per_round": [5000] * 500,
+}
+AUCTIONS = {"a1": {"die": 6, "num": 3, "bonus": 7}, "a2": {"die": 12, "num": 4, "bonus": 2}}
+
+
+def test_safe_decide_skips_the_round_when_the_brain_crashes() -> None:
+    assert safe_decide(BrokenBrain(), 9000, AUCTIONS, {}, BANK_STATE) == {}
+
+
+def test_safe_decide_cleans_a_sloppy_answer() -> None:
+    assert safe_decide(SloppyBrain(), 1000, AUCTIONS, {}, BANK_STATE) == {"a1": 250}
+
+
+def test_safe_decide_lets_a_good_answer_through() -> None:
+    bids = safe_decide(Brain(), 9000, AUCTIONS, {}, BANK_STATE)
+    assert len(bids) > 0
