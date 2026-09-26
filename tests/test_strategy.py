@@ -2,10 +2,13 @@ from dataclasses import replace
 
 from smaug.agent.config import DEFAULT_SETTINGS
 from smaug.agent.strategy import (
+    current_margin,
     expected_value,
+    is_endgame,
     market_price,
     reserve,
     round_price_per_point,
+    spending_budget,
 )
 
 
@@ -86,3 +89,20 @@ def test_reserve_survives_odd_settings() -> None:
     assert reserve(bank_limit=5000, rounds_left=2, settings=no_finish) == 0
     no_melt = replace(DEFAULT_SETTINGS, endgame_rounds=0)
     assert reserve(bank_limit=5000, rounds_left=500, settings=no_melt) == 5000
+
+
+def test_endgame_starts_110_useful_rounds_before_the_end() -> None:
+    assert not is_endgame(rounds_left=500, settings=DEFAULT_SETTINGS)
+    assert not is_endgame(rounds_left=112, settings=DEFAULT_SETTINGS)
+    assert is_endgame(rounds_left=111, settings=DEFAULT_SETTINGS)
+    assert is_endgame(rounds_left=2, settings=DEFAULT_SETTINGS)
+
+
+def test_margin_is_bigger_during_the_endgame() -> None:
+    assert current_margin(rounds_left=500, settings=DEFAULT_SETTINGS) == 0.15
+    assert current_margin(rounds_left=50, settings=DEFAULT_SETTINGS) == 0.60
+
+
+def test_budget_is_the_gold_above_the_savings_and_never_negative() -> None:
+    assert spending_budget(gold=7200, reserve_amount=5000) == 2200
+    assert spending_budget(gold=4000, reserve_amount=5000) == 0

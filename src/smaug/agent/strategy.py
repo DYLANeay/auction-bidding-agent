@@ -57,3 +57,22 @@ def reserve(bank_limit: float, rounds_left: int, settings: Settings) -> float:
     kept_share = min(kept_share, 1)
     kept_share = max(kept_share, 0)
     return full_reserve * kept_share
+
+
+def is_endgame(rounds_left: int, settings: Settings) -> bool:
+    """True during the window where savings melt and we go for big bids"""
+    useful_rounds_left = rounds_left - 1
+    window = settings.endgame_rounds + settings.endgame_finish_rounds
+    return useful_rounds_left <= window
+
+
+def current_margin(rounds_left: int, settings: Settings) -> float:
+    """Normal margin during the game, big one during the endgame"""
+    if is_endgame(rounds_left, settings):
+        return settings.endgame_margin
+    return settings.margin
+
+
+def spending_budget(gold: float, reserve_amount: float) -> float:
+    """Gold we can spend this round, everything above the savings"""
+    return max(gold - reserve_amount, 0)
