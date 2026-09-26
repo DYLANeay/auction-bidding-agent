@@ -1,7 +1,7 @@
 from dataclasses import replace
 
-from smaug.agent.brain import Brain
 from smaug.agent.config import DEFAULT_SETTINGS
+from smaug.agent.strategy.brain import Brain
 
 
 def make_bank_state(rounds_left: int, bank_limit: int = 5000) -> dict[str, list]:
@@ -34,3 +34,12 @@ def test_brain_saves_first_then_bids_with_the_surplus() -> None:
     assert brain.decide(4000, auctions, prev_auctions, make_bank_state(rounds_left=500)) == {}
     # 7200 d'or : 2200 au-dessus de l'épargne, la mise de 1288 passe
     assert brain.decide(7200, auctions, prev_auctions, make_bank_state(rounds_left=500)) == {"a41": 1288}
+
+
+def test_brain_survives_an_absurd_history_setting() -> None:
+    prev_auctions = {"a1": {"die": 6, "num": 3, "bonus": 7, "bids": [{"a_id": "x", "gold": 700}]}}
+    for absurd in [0, -1, -100]:
+        brain = Brain(replace(DEFAULT_SETTINGS, history_rounds=absurd))
+        brain.remember_prices(prev_auctions)
+        brain.remember_prices(prev_auctions)
+        assert brain.price_history == [40]

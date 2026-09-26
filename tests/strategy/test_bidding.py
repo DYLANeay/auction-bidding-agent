@@ -1,5 +1,5 @@
-from smaug.agent.bidding import choose_bids
 from smaug.agent.config import DEFAULT_SETTINGS
+from smaug.agent.strategy.bidding import choose_bids
 
 
 def test_bids_follow_the_guide_example() -> None:

@@ -1,4 +1,4 @@
-from smaug.agent.values import expected_value
+from smaug.agent.strategy.values import expected_value
 
 
 def test_expected_value_of_known_auctions() -> None:

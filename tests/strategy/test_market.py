@@ -1,4 +1,4 @@
-from smaug.agent.market import market_price, round_price_per_point
+from smaug.agent.strategy.market import market_price, round_price_per_point
 
 
 def test_round_price_is_the_median_of_winning_prices() -> None:

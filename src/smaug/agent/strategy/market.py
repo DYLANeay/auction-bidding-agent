@@ -2,7 +2,7 @@
 
 from statistics import median
 
-from smaug.agent.values import expected_value
+from smaug.agent.strategy.values import expected_value
 
 
 # prix médian payé par point au tour précédent
