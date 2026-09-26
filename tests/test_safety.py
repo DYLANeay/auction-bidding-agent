@@ -1,8 +1,12 @@
+import json
+from typing import Any
+
 import numpy as np
 
 from smaug.agent.brain import Brain
 from smaug.agent.safety import (
     clean_bids,
+    play_round,
     read_auction,
     read_auctions,
     read_bank_state,
@@ -10,6 +14,7 @@ from smaug.agent.safety import (
     read_gold,
     read_number_list,
     read_prev_auctions,
+    read_round,
     safe_decide,
     to_number,
     to_whole_number,
@@ -167,3 +172,41 @@ def test_read_gold_finds_our_gold_or_gives_up() -> None:
     assert read_gold({"me": {"gold": "rich"}}, "me") is None
     assert read_gold({"me": {"gold": -10}}, "me") is None
     assert read_gold(None, "me") is None
+
+
+def make_message(gold: Any = 7200) -> str:
+    return json.dumps({
+        "states": {"me": {"gold": gold, "points": 0}},
+        "auctions": {"a41": {"die": 12, "num": 4, "bonus": 2}},
+        "prev_auctions": {},
+        "remainder_gold_income": [1000] * 500,
+        "remainder_bank_interest": [1.05] * 500,
+        "remainder_bank_limit": [5000] * 500,
+    })
+
+
+def test_read_round_gives_a_clean_round() -> None:
+    current_round = read_round(make_message(), "me")
+    assert current_round is not None
+    assert current_round.gold == 7200
+    assert current_round.auctions == {"a41": {"die": 12, "num": 4, "bonus": 2}}
+
+
+def test_read_round_skips_broken_messages() -> None:
+    assert read_round("not json at all", "me") is None
+    assert read_round("[1, 2, 3]", "me") is None
+    assert read_round(make_message(), "someone else") is None
+    assert read_round(make_message(gold="lots"), "me") is None
+    assert read_round("[" * 100000, "me") is None
+
+
+def test_play_round_answers_with_bids() -> None:
+    answer = play_round(Brain(), make_message(), "me")
+    assert answer["points_to_spend"] == 0
+    assert "a41" in answer["bids"]
+
+
+def test_play_round_always_answers_something_valid() -> None:
+    for text in ["", "null", "{}", "not json", None, 42, make_message(gold=None)]:
+        answer = play_round(Brain(), text, "me")
+        assert answer == {"bids": {}, "points_to_spend": 0}

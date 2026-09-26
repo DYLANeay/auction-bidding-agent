@@ -1,6 +1,8 @@
 """Checks everything going in and out of the brain (think: airport security)"""
 
+import json
 import math
+from dataclasses import dataclass
 from typing import Any
 
 from smaug.agent.brain import Brain
@@ -196,3 +198,54 @@ def read_gold(states: Any, agent_id: str) -> int | None:
     if gold is None or gold < 0:
         return None
     return gold
+
+
+# un tour dont chaque donnée a été vérifiée, prêt pour le cerveau
+@dataclass
+class Round:
+    gold: int
+    auctions: dict[str, dict]
+    prev_auctions: dict[str, dict]
+    bank_state: dict[str, list]
+
+
+# but : transformer le texte brut du serveur en tour entièrement vérifié, ou dire qu'il faut sauter le tour
+def read_round(text: Any, agent_id: str) -> Round | None:
+    """A fully checked round from the raw server text, or None to skip the round"""
+    try:
+        message = json.loads(text)
+    except (TypeError, ValueError, RecursionError):
+        return None
+    if not isinstance(message, dict):
+        return None
+
+    gold = read_gold(message.get("states"), agent_id)
+    bank_state = read_bank_state(message)
+    # sans notre or ou sans le futur de la banque, impossible de décider : on saute le tour
+    if gold is None or bank_state is None:
+        return None
+
+    auctions = read_auctions(message.get("auctions"))
+    prev_auctions = read_prev_auctions(message.get("prev_auctions"))
+    return Round(gold, auctions, prev_auctions, bank_state)
+
+
+# but : répondre à un message du serveur, quoi qu'il arrive, avec une réponse toujours valide
+def play_round(brain: Brain, text: Any, agent_id: str) -> dict:
+    """The answer to send for one raw server message, whatever happens"""
+    no_bids = {"bids": {}, "points_to_spend": 0}
+    try:
+        current_round = read_round(text, agent_id)
+        if current_round is None:
+            return no_bids
+        bids = safe_decide(
+            brain,
+            current_round.gold,
+            current_round.auctions,
+            current_round.prev_auctions,
+            current_round.bank_state,
+        )
+        return {"bids": bids, "points_to_spend": 0}
+    except Exception:  # noqa: BLE001
+        # dernier filet : même un bug dans l'airbag ne doit pas arrêter l'agent
+        return no_bids
