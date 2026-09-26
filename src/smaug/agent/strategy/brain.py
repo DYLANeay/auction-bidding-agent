@@ -1,9 +1,9 @@
 """The buyer who uses every tool in order each round (think: the driver reading the dashboard)"""
 
-from smaug.agent.bidding import choose_bids
 from smaug.agent.config import DEFAULT_SETTINGS, Settings
-from smaug.agent.market import market_price, round_price_per_point
-from smaug.agent.planning import current_margin, reserve, spending_budget
+from smaug.agent.strategy.bidding import choose_bids
+from smaug.agent.strategy.market import market_price, round_price_per_point
+from smaug.agent.strategy.planning import current_margin, reserve, spending_budget
 
 
 class Brain:

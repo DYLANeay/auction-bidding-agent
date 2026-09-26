@@ -1,7 +1,12 @@
 from dataclasses import replace
 
 from smaug.agent.config import DEFAULT_SETTINGS
-from smaug.agent.planning import current_margin, is_endgame, reserve, spending_budget
+from smaug.agent.strategy.planning import (
+    current_margin,
+    is_endgame,
+    reserve,
+    spending_budget,
+)
 
 
 def test_reserve_keeps_the_whole_bank_limit_mid_game() -> None:

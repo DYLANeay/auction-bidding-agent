@@ -1,7 +1,7 @@
 """Which auctions to bid on, and how much (think: walking the auction room with your wallet)"""
 
 from smaug.agent.config import Settings
-from smaug.agent.values import expected_value
+from smaug.agent.strategy.values import expected_value
 
 
 def choose_bids(

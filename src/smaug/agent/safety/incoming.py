@@ -1,79 +1,10 @@
-"""Checks everything going in and out of the brain (think: airport security)"""
+"""Reads what comes in from the server, keeping only what makes sense (think: the arrivals hall)"""
 
 import json
-import math
-from dataclasses import dataclass
 from typing import Any
 
-from smaug.agent.brain import Brain
-
-#
-#  Brain ──▶ [clean_bids + to_whole_number] ──▶ serveur
-# « est-ce vraiment un nombre utilisable ? »
-
-
-# but : transformer n'importe quelle valeur en nombre à virgule sûr, ou dire qu'elle est inutilisable
-def to_number(value: Any) -> float | None:
-    """A finite float from any number, or None if it is not a usable number"""
-    # True et False sont des nombres pour Python, jamais pour nous
-    if isinstance(value, bool):
-        return None
-    try:
-        number = float(value)
-    except (TypeError, ValueError):
-        return None
-    # rejette NaN et l'infini
-    if not math.isfinite(number):
-        return None
-    return number
-
-
-def to_whole_number(value: Any) -> int | None:
-    """A plain Python int from any number, or None if it is not a usable number"""
-    number = to_number(value)
-    if number is None:
-        return None
-    return int(number)
-
-
-# « ne laisser partir que des mises valides »
-def clean_bids(raw_bids: object, auction_ids: set[str], gold: int) -> dict[str, int]:
-    """Only valid bids: Python ints of at least 1, on this round's auctions, within our gold"""
-    if not isinstance(raw_bids, dict):
-        return {}
-
-    cleaned = {}
-    remaining = gold
-    for auction_id, raw_bid in raw_bids.items():
-        if auction_id not in auction_ids:
-            continue
-        bid = to_whole_number(raw_bid)
-        if bid is None or bid < 1:
-            continue
-        # le serveur ignore en silence une mise qui dépasse l'or restant
-        if bid > remaining:
-            continue
-        cleaned[auction_id] = bid
-        remaining -= bid
-    return cleaned
-
-
-# demande ses mises au cerveau dans une zone protégée : si le cerveau plante, on saute le tour, et s'il répond, on nettoie sa réponse avant de l'envoyer
-def safe_decide(
-    brain: Brain,
-    gold: int,
-    auctions: dict[str, dict],
-    prev_auctions: dict[str, dict],
-    bank_state: dict[str, list],
-) -> dict[str, int]:
-    """The brain's bids, cleaned, or no bids at all if anything goes wrong"""
-    try:
-        raw_bids = brain.decide(gold, auctions, prev_auctions, bank_state)
-    except Exception:  # noqa: BLE001
-        # un bug dans le cerveau ne doit jamais arrêter l'agent : on saute le tour
-        return {}
-    return clean_bids(raw_bids, set(auctions), gold)
-
+from smaug.agent.safety.conversion import to_number, to_whole_number
+from smaug.agent.safety.game_round import Round
 
 # au-delà, les dés ne peuvent venir que d'un message piégé
 MAX_DIE = 1000
@@ -200,15 +131,6 @@ def read_gold(states: Any, agent_id: str) -> int | None:
     return gold
 
 
-# un tour dont chaque donnée a été vérifiée, prêt pour le cerveau
-@dataclass
-class Round:
-    gold: int
-    auctions: dict[str, dict]
-    prev_auctions: dict[str, dict]
-    bank_state: dict[str, list]
-
-
 # but : transformer le texte brut du serveur en tour entièrement vérifié, ou dire qu'il faut sauter le tour
 def read_round(text: Any, agent_id: str) -> Round | None:
     """A fully checked round from the raw server text, or None to skip the round"""
@@ -228,24 +150,3 @@ def read_round(text: Any, agent_id: str) -> Round | None:
     auctions = read_auctions(message.get("auctions"))
     prev_auctions = read_prev_auctions(message.get("prev_auctions"))
     return Round(gold, auctions, prev_auctions, bank_state)
-
-
-# but : répondre à un message du serveur, quoi qu'il arrive, avec une réponse toujours valide
-def play_round(brain: Brain, text: Any, agent_id: str) -> dict:
-    """The answer to send for one raw server message, whatever happens"""
-    no_bids = {"bids": {}, "points_to_spend": 0}
-    try:
-        current_round = read_round(text, agent_id)
-        if current_round is None:
-            return no_bids
-        bids = safe_decide(
-            brain,
-            current_round.gold,
-            current_round.auctions,
-            current_round.prev_auctions,
-            current_round.bank_state,
-        )
-        return {"bids": bids, "points_to_spend": 0}
-    except Exception:  # noqa: BLE001
-        # dernier filet : même un bug dans l'airbag ne doit pas arrêter l'agent
-        return no_bids

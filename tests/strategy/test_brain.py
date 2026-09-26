@@ -1,7 +1,7 @@
 from dataclasses import replace
 
-from smaug.agent.brain import Brain
 from smaug.agent.config import DEFAULT_SETTINGS
+from smaug.agent.strategy.brain import Brain
 
 
 def make_bank_state(rounds_left: int, bank_limit: int = 5000) -> dict[str, list]:

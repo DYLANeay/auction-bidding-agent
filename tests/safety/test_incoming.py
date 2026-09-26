@@ -1,12 +1,7 @@
 import json
 from typing import Any
 
-import numpy as np
-
-from smaug.agent.brain import Brain
-from smaug.agent.safety import (
-    clean_bids,
-    play_round,
+from smaug.agent.safety.incoming import (
     read_auction,
     read_auctions,
     read_bank_state,
@@ -15,76 +10,7 @@ from smaug.agent.safety import (
     read_number_list,
     read_prev_auctions,
     read_round,
-    safe_decide,
-    to_number,
-    to_whole_number,
 )
-
-
-def test_whole_number_accepts_numbers_including_numpy() -> None:
-    assert to_whole_number(12) == 12
-    assert to_whole_number(12.9) == 12
-    assert to_whole_number(np.int64(7)) == 7
-    assert type(to_whole_number(np.int64(7))) is int
-
-
-def test_whole_number_rejects_what_is_not_a_usable_number() -> None:
-    for bad_value in [None, "abc", [], {}, True, float("nan"), float("inf")]:
-        assert to_whole_number(bad_value) is None
-
-
-def test_clean_bids_keeps_good_bids_as_python_ints() -> None:
-    bids = clean_bids({"a1": np.int64(300), "a2": 200.0}, {"a1", "a2"}, gold=1000)
-    assert bids == {"a1": 300, "a2": 200}
-    for bid in bids.values():
-        assert type(bid) is int
-
-
-def test_clean_bids_drops_unknown_auctions_and_bad_amounts() -> None:
-    raw_bids = {"a1": 300, "ghost": 100, "a2": 0, "a3": -50, "a4": "lots"}
-    assert clean_bids(raw_bids, {"a1", "a2", "a3", "a4"}, gold=1000) == {"a1": 300}
-
-
-def test_clean_bids_never_exceed_our_gold() -> None:
-    bids = clean_bids({"a1": 700, "a2": 500, "a3": 200}, {"a1", "a2", "a3"}, gold=1000)
-    assert bids == {"a1": 700, "a3": 200}
-    assert sum(bids.values()) <= 1000
-
-
-def test_clean_bids_of_garbage_is_empty() -> None:
-    assert clean_bids(None, {"a1"}, gold=1000) == {}
-    assert clean_bids(["a1", 300], {"a1"}, gold=1000) == {}
-
-
-class BrokenBrain(Brain):
-    def decide(self, gold, auctions, prev_auctions, bank_state):
-        raise ZeroDivisionError("bug in the brain")
-
-
-class SloppyBrain(Brain):
-    def decide(self, gold, auctions, prev_auctions, bank_state):
-        return {"a1": np.float64(250.7), "ghost": 100, "a2": 99999}
-
-
-BANK_STATE = {
-    "gold_income_per_round": [1000] * 500,
-    "bank_interest_per_round": [1.05] * 500,
-    "bank_limit_per_round": [5000] * 500,
-}
-AUCTIONS = {"a1": {"die": 6, "num": 3, "bonus": 7}, "a2": {"die": 12, "num": 4, "bonus": 2}}
-
-
-def test_safe_decide_skips_the_round_when_the_brain_crashes() -> None:
-    assert safe_decide(BrokenBrain(), 9000, AUCTIONS, {}, BANK_STATE) == {}
-
-
-def test_safe_decide_cleans_a_sloppy_answer() -> None:
-    assert safe_decide(SloppyBrain(), 1000, AUCTIONS, {}, BANK_STATE) == {"a1": 250}
-
-
-def test_safe_decide_lets_a_good_answer_through() -> None:
-    bids = safe_decide(Brain(), 9000, AUCTIONS, {}, BANK_STATE)
-    assert len(bids) > 0
 
 
 def test_read_auction_keeps_good_dice() -> None:
@@ -127,12 +53,6 @@ def test_read_functions_survive_garbage() -> None:
     for garbage in [None, 42, "text", [1, 2], {"a1": None}]:
         assert read_auctions(garbage) == {}
         assert read_prev_auctions(garbage) == {}
-
-
-def test_to_number_keeps_decimals() -> None:
-    assert to_number(1.05) == 1.05
-    assert to_number("2.5") == 2.5
-    assert to_number(float("nan")) is None
 
 
 def test_read_number_list_refuses_any_broken_value() -> None:
@@ -198,15 +118,3 @@ def test_read_round_skips_broken_messages() -> None:
     assert read_round(make_message(), "someone else") is None
     assert read_round(make_message(gold="lots"), "me") is None
     assert read_round("[" * 100000, "me") is None
-
-
-def test_play_round_answers_with_bids() -> None:
-    answer = play_round(Brain(), make_message(), "me")
-    assert answer["points_to_spend"] == 0
-    assert "a41" in answer["bids"]
-
-
-def test_play_round_always_answers_something_valid() -> None:
-    for text in ["", "null", "{}", "not json", None, 42, make_message(gold=None)]:
-        answer = play_round(Brain(), text, "me")
-        assert answer == {"bids": {}, "points_to_spend": 0}
