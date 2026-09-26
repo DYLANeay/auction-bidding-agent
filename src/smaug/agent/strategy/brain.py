@@ -19,7 +19,9 @@ class Brain:
             return
         self.price_history.append(price)
         # fenêtre glissante : on oublie les tours trop anciens
-        while len(self.price_history) > self.settings.history_rounds:
+        # au moins 1 tour, même si on tape un réglage absurde depuis le TUI
+        window = max(self.settings.history_rounds, 1)
+        while len(self.price_history) > window:
             self.price_history.pop(0)
 
     def decide(
