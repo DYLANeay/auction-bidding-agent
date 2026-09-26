@@ -62,3 +62,83 @@ def safe_decide(
         # un bug dans le cerveau ne doit jamais arrêter l'agent : on saute le tour
         return {}
     return clean_bids(raw_bids, set(auctions), gold)
+
+
+# au-delà, les dés ne peuvent venir que d'un message piégé
+MAX_DIE = 1000
+MAX_DICE = 1000
+MAX_BONUS = 10000
+
+
+# but : lire les dés d'une enchère et refuser ceux qui sont absents, cassés ou absurdes
+def read_auction(raw: Any) -> dict[str, int] | None:
+    """Dice of one auction, or None if they make no sense"""
+    if not isinstance(raw, dict):
+        return None
+    die = to_whole_number(raw.get("die"))
+    num = to_whole_number(raw.get("num"))
+    bonus = to_whole_number(raw.get("bonus"))
+    if die is None or num is None or bonus is None:
+        return None
+    if die < 1 or die > MAX_DIE:
+        return None
+    if num < 1 or num > MAX_DICE:
+        return None
+    if abs(bonus) > MAX_BONUS:
+        return None
+    return {"die": die, "num": num, "bonus": bonus}
+
+
+# but : donner le montant d'une mise, pour pouvoir trier les mises par or
+def bid_gold(bid: dict) -> int:
+    return bid["gold"]
+
+
+# but : lire les mises d'une enchère terminée, retirer les cassées et remettre la plus haute en premier
+def read_bids(raw_bids: Any) -> list[dict]:
+    """Bids of a finished auction, highest first, without the broken ones"""
+    if not isinstance(raw_bids, list):
+        return []
+    bids = []
+    for raw_bid in raw_bids:
+        if not isinstance(raw_bid, dict):
+            continue
+        gold = to_whole_number(raw_bid.get("gold"))
+        if gold is None or gold < 0:
+            continue
+        bids.append({"a_id": str(raw_bid.get("a_id", "")), "gold": gold})
+    # on ne fait pas confiance à l'ordre reçu : la plus haute mise d'abord
+    bids.sort(key=bid_gold, reverse=True)
+    return bids
+
+
+# but : lire toutes les enchères du tour en ignorant seulement celles qui sont cassées
+def read_auctions(raw: Any) -> dict[str, dict]:
+    """This round's auctions, skipping the broken ones"""
+    if not isinstance(raw, dict):
+        return {}
+    auctions = {}
+    for auction_id, raw_auction in raw.items():
+        auction = read_auction(raw_auction)
+        if isinstance(auction_id, str) and auction is not None:
+            auctions[auction_id] = auction
+    return auctions
+
+
+# but : lire les résultats du tour précédent (dés + mises) en ignorant ceux qui sont cassés
+def read_prev_auctions(raw: Any) -> dict[str, dict]:
+    """Last round's results with their bids, skipping the broken ones"""
+    if not isinstance(raw, dict):
+        return {}
+    prev_auctions = {}
+    for auction_id, raw_auction in raw.items():
+        auction = read_auction(raw_auction)
+        if not isinstance(auction_id, str) or auction is None:
+            continue
+        prev_auctions[auction_id] = {
+            "die": auction["die"],
+            "num": auction["num"],
+            "bonus": auction["bonus"],
+            "bids": read_bids(raw_auction.get("bids")),
+        }
+    return prev_auctions

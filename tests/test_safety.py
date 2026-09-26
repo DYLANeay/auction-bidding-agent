@@ -1,7 +1,15 @@
 import numpy as np
 
 from smaug.agent.brain import Brain
-from smaug.agent.safety import clean_bids, safe_decide, to_whole_number
+from smaug.agent.safety import (
+    clean_bids,
+    read_auction,
+    read_auctions,
+    read_bids,
+    read_prev_auctions,
+    safe_decide,
+    to_whole_number,
+)
 
 
 def test_whole_number_accepts_numbers_including_numpy() -> None:
@@ -68,3 +76,45 @@ def test_safe_decide_cleans_a_sloppy_answer() -> None:
 def test_safe_decide_lets_a_good_answer_through() -> None:
     bids = safe_decide(Brain(), 9000, AUCTIONS, {}, BANK_STATE)
     assert len(bids) > 0
+
+
+def test_read_auction_keeps_good_dice() -> None:
+    assert read_auction({"die": 6, "num": 3, "bonus": 7}) == {"die": 6, "num": 3, "bonus": 7}
+    assert read_auction({"die": "6", "num": 3.0, "bonus": -2}) == {"die": 6, "num": 3, "bonus": -2}
+
+
+def test_read_auction_rejects_broken_or_absurd_dice() -> None:
+    broken = [
+        None,
+        "3d6+7",
+        {"die": 6, "num": 3},  # bonus manquant
+        {"die": 0, "num": 3, "bonus": 7},  # dé à 0 face
+        {"die": 6, "num": 3, "bonus": None},
+        {"die": 10**12, "num": 3, "bonus": 7},
+        {"die": 6, "num": -1, "bonus": 7},
+    ]
+    for raw in broken:
+        assert read_auction(raw) is None
+
+
+def test_read_bids_sorts_highest_first_and_drops_broken_bids() -> None:
+    raw_bids = [{"a_id": "x", "gold": 100}, {"a_id": "y", "gold": 700}, {"gold": "lots"}, "junk"]
+    assert read_bids(raw_bids) == [{"a_id": "y", "gold": 700}, {"a_id": "x", "gold": 100}]
+
+
+def test_read_auctions_skips_broken_auctions_only() -> None:
+    raw = {"a1": {"die": 6, "num": 3, "bonus": 7}, "a2": "broken", 42: {"die": 6, "num": 1, "bonus": 0}}
+    assert read_auctions(raw) == {"a1": {"die": 6, "num": 3, "bonus": 7}}
+
+
+def test_read_prev_auctions_keeps_clean_results() -> None:
+    raw = {"a1": {"die": 6, "num": 3, "bonus": 7, "reward": 15, "bids": [{"a_id": "x", "gold": 700}]}}
+    assert read_prev_auctions(raw) == {
+        "a1": {"die": 6, "num": 3, "bonus": 7, "bids": [{"a_id": "x", "gold": 700}]}
+    }
+
+
+def test_read_functions_survive_garbage() -> None:
+    for garbage in [None, 42, "text", [1, 2], {"a1": None}]:
+        assert read_auctions(garbage) == {}
+        assert read_prev_auctions(garbage) == {}
