@@ -26,6 +26,18 @@ pip install -e . pytest
 | `make install` | install Python 3.12 and dependencies  |
 | `make test`    | run the tests                         |
 | `make check`   | run before every commit               |
+| `make battle`  | play for real, using the settings in `.env` |
+
+## Play
+
+Copy the example settings and fill in the values given by the teacher (`.env` is never committed):
+
+```bash
+cp .env.example .env
+make battle
+```
+
+The agent waits for the game to start, plays every round and calls back after a drop while the game is still running. If the previous game is already over, it asks before connecting, because connecting would reset the scoreboard.
 
 ## Layout
 
