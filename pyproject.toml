@@ -12,7 +12,7 @@ dependencies = [
 
 [dependency-groups]
 dev = ["pytest"]                 # tests only
-tools = ["rich", "matplotlib"]   # TUI and plots, never imported by the agent
+tools = ["textual>=8.2", "matplotlib"]   # TUI and plots, never imported by the agent
 
 [build-system]
 requires = ["hatchling"]

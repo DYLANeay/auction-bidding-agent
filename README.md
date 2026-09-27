@@ -27,6 +27,7 @@ pip install -e . pytest
 | `make test`    | run the tests                         |
 | `make check`   | run before every commit               |
 | `make battle`  | play for real, using the settings in `.env` |
+| `make monitor` | live view of our agent and the scoreboard, in a second terminal |
 | `make rehearsal` | full local game against the teacher's example agents (`ROUNDS=300 OPPONENTS=5`) |
 | `make sim` | one simulated game in seconds, no server (`CLASS=weak\|mixed\|strong ROUNDS=1000 SEED=1`) |
 | `make tournament` | many simulated games per class and setting, summary in `results/tournament.md` (`GAMES=20 FIRST_SEED=1`) |
@@ -41,6 +42,18 @@ make battle
 ```
 
 The agent waits for the game to start, plays every round and calls back after a drop while the game is still running. If the previous game is already over, it asks before connecting, because connecting would reset the scoreboard.
+
+## Monitor
+
+In a second terminal, while the agent plays:
+
+```bash
+make monitor
+```
+
+It shows our agent's signals from `logs/logbook_*.jsonl` (win rate, gold lost, market
+price, active settings, pause, response time) next to the scoreboard read from
+`/api/leadboard`. It only reads, and the agent never depends on it.
 
 ## Live control
 
