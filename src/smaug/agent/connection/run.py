@@ -26,8 +26,9 @@ def main() -> None:
         return
 
     # un seul cerveau et un seul journal pour toute la partie, même après une reconnexion
-    logbook_path = Path("logs") / f"agent_{settings.name}_{time.strftime('%Y%m%d_%H%M%S')}.jsonl"
-    client = SafeClient(settings, Brain(), logbook_path)
+    # pas de préfixe "agent_" : c'est celui des logs du client du prof
+    logbook_path = Path("logs") / f"logbook_{settings.name}_{time.strftime('%Y%m%d_%H%M%S')}.jsonl"
+    client = SafeClient(settings, Brain(), logbook_path, Path("logs") / "control.json")
     last_rounds_left = None
     last_message_at = None
 

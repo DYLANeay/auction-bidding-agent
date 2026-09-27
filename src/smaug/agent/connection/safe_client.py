@@ -12,6 +12,7 @@ from websockets.asyncio.client import connect
 from websockets.exceptions import ConnectionClosed, ConnectionClosedOK, InvalidHandshake
 
 from smaug.agent.connection.settings import ConnectionSettings
+from smaug.agent.control import ControlFile, settings_for_this_round
 from smaug.agent.logbook import open_logbook, write_round
 from smaug.agent.safety.airbag import play_round
 from smaug.agent.safety.incoming import read_round
@@ -64,7 +65,9 @@ def why_closed_normally(rounds_received: int, rounds_left: int | None) -> str:
 class SafeClient(AuctionGameClient):
     """The teacher's client, playing every round through the airbag"""
 
-    def __init__(self, settings: ConnectionSettings, brain: Brain, logbook_path: Path) -> None:
+    def __init__(
+        self, settings: ConnectionSettings, brain: Brain, logbook_path: Path, control_path: Path
+    ) -> None:
         super().__init__(
             host=settings.host,
             agent_name=settings.name,
@@ -73,6 +76,9 @@ class SafeClient(AuctionGameClient):
             port=settings.port,
         )
         self.brain = brain
+        # les réglages d'usine, sur lesquels chaque consigne est posée
+        self.base_settings = brain.settings
+        self.control_file = ControlFile(control_path)
         try:
             self.logbook = open_logbook(logbook_path)
         except OSError:
@@ -111,7 +117,12 @@ class SafeClient(AuctionGameClient):
                     if rounds_left is not None:
                         report.rounds_left = rounds_left
                     self.write_log(text)
-                    answer = play_round(self.brain, text, self.agent_id)
+                    settings, paused = settings_for_this_round(self.control_file, self.base_settings)
+                    self.brain.settings = settings
+                    if paused:
+                        answer = {"bids": {}, "points_to_spend": 0}
+                    else:
+                        answer = play_round(self.brain, text, self.agent_id)
                     if self.logbook is not None:
                         write_round(self.logbook, report.rounds_received, round_gold(text, self.agent_id), answer)
                     await server.send(json.dumps(answer))
