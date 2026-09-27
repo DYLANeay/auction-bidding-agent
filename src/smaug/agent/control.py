@@ -25,7 +25,7 @@ class ControlFile:
     def read(self) -> dict:
         try:
             instructions = json.loads(self.path.read_text())
-        except (OSError, ValueError):
+        except (OSError, ValueError, RecursionError):
             return self.last_valid_instructions
         if not isinstance(instructions, dict):
             return self.last_valid_instructions
@@ -53,3 +53,13 @@ def apply_control(base_settings: Settings, instructions: dict) -> tuple[Settings
 
     paused = instructions.get("pause") is True
     return settings, paused
+
+
+def settings_for_this_round(control_file: ControlFile, base_settings: Settings) -> tuple[Settings, bool]:
+    """The settings to play with this round, never raising"""
+    try:
+        instructions = control_file.read()
+        return apply_control(base_settings, instructions)
+    except Exception:  # noqa: BLE001
+        # la radio ne doit jamais arrêter l'agent : réglages d'usine, sans pause
+        return base_settings, False

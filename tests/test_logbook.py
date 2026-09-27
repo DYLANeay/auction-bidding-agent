@@ -6,7 +6,7 @@ from smaug.agent.logbook import open_logbook, write_round
 
 
 def test_write_round_appends_one_json_line(tmp_path):
-    logbook_path = tmp_path / "agent_test.jsonl"
+    logbook_path = tmp_path / "logbook_test.jsonl"
     logbook = open_logbook(logbook_path)
 
     write_round(logbook, round_number=1, gold=500, answer={"bids": {"a1": 20}, "points_to_spend": 0})
@@ -19,7 +19,7 @@ def test_write_round_appends_one_json_line(tmp_path):
 
 
 def test_write_round_never_raises_on_a_bad_answer(tmp_path):
-    logbook_path = tmp_path / "agent_test.jsonl"
+    logbook_path = tmp_path / "logbook_test.jsonl"
     logbook = open_logbook(logbook_path)
 
     write_round(logbook, round_number=1, gold=500, answer="not a dict")

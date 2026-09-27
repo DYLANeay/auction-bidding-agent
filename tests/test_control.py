@@ -1,7 +1,7 @@
 """Live instructions are bounded, and a broken file keeps the last valid ones"""
 
 from smaug.agent.config import DEFAULT_SETTINGS, Settings
-from smaug.agent.control import ControlFile, apply_control
+from smaug.agent.control import ControlFile, apply_control, settings_for_this_round
 
 
 def test_no_instructions_keeps_the_tournament_settings() -> None:
@@ -39,3 +39,26 @@ def test_control_file_keeps_the_last_valid_instructions(tmp_path) -> None:
 def test_control_file_tolerates_a_missing_file(tmp_path) -> None:
     control_file = ControlFile(tmp_path / "missing.json")
     assert control_file.read() == {}
+
+
+def test_control_file_survives_deeply_nested_junk(tmp_path) -> None:
+    path = tmp_path / "control.json"
+    path.write_text("[" * 100_000)
+    control_file = ControlFile(path)
+    assert control_file.read() == {}
+
+
+def test_settings_for_this_round_without_a_file_are_the_defaults(tmp_path) -> None:
+    control_file = ControlFile(tmp_path / "missing.json")
+    settings, paused = settings_for_this_round(control_file, DEFAULT_SETTINGS)
+    assert settings == DEFAULT_SETTINGS
+    assert paused is False
+
+
+def test_settings_for_this_round_follow_the_file(tmp_path) -> None:
+    path = tmp_path / "control.json"
+    path.write_text('{"margin": 0.5, "pause": true}')
+    control_file = ControlFile(path)
+    settings, paused = settings_for_this_round(control_file, DEFAULT_SETTINGS)
+    assert settings.margin == 0.5
+    assert paused is True
