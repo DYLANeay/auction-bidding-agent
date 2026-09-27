@@ -1,8 +1,5 @@
 # Expected results
 
-Report meant to be read (Canvas submission), built from the raw data in `tournament.md`,
-`combinations.md` and `confirmation.md`.
-
 ## What I built
 
 An auction agent that plays like a prudent investor: it skips auctions worth too little on
@@ -45,11 +42,11 @@ market price plus 30% (instead of 15%) and follows the market over the last 10 r
 
 Average place out of 20 on the confirmation games (lower is better), then the grades:
 
-| class  | first version        | final version            |
-|--------|----------------------|--------------------------|
-| weak   | 1.0 (A 20)           | 1.0 (A 20)               |
-| mixed  | 10.2 (C 4, D 15, E 1) | 8.6 (B 1, C 8, D 11)     |
-| strong | 15.6 (D 2, E 18)     | 2.7 (A 16, B 1, C 2, D 1) |
+| class  | first version         | final version             |
+| ------ | --------------------- | ------------------------- |
+| weak   | 1.0 (A 20)            | 1.0 (A 20)                |
+| mixed  | 10.2 (C 4, D 15, E 1) | 8.6 (B 1, C 8, D 11)      |
+| strong | 15.6 (D 2, E 18)      | 2.7 (A 16, B 1, C 2, D 1) |
 
 I expect to finish between 1st and 9th, most likely around the middle of the top half:
 grade C in a class like my mixed one, A or B in a class of serious agents, A against
