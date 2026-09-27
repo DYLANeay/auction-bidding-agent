@@ -10,7 +10,14 @@ from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.widgets import DataTable, Sparkline, Static
 
-from smaug.tui.panels import agent_text, game_text, ranking_row, statusline_left, statusline_right, tabline
+from smaug.tui.panels import (
+    agent_text,
+    game_text,
+    ranking_row,
+    statusline_left,
+    statusline_right,
+    tabline,
+)
 from smaug.tui.sources import fetch_leaderboard, game_summary, read_agent
 from smaug.tui.style import CSS
 
@@ -18,7 +25,7 @@ from smaug.tui.style import CSS
 class MonitorApp(App):
     """Refreshes both panels every second, reading only: it never writes anything"""
 
-    TITLE = "Smaug monitor"
+    TITLE = "Monitor"
     CSS = CSS
     BINDINGS = [("q", "quit", "Quit")]
     ENABLE_COMMAND_PALETTE = False
@@ -91,8 +98,12 @@ class MonitorApp(App):
 
         server = f"{self.host}:{self.port}"
         clock = time.strftime("%H:%M:%S")
-        self.query_one("#statusline-left", Static).update(statusline_left(agent, game, self.our_name))
-        self.query_one("#statusline-right", Static).update(statusline_right(server, clock, game is not None))
+        self.query_one("#statusline-left", Static).update(
+            statusline_left(agent, game, self.our_name)
+        )
+        self.query_one("#statusline-right", Static).update(
+            statusline_right(server, clock, game is not None)
+        )
 
 
 def main() -> None:
