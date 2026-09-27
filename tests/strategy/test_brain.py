@@ -1,6 +1,6 @@
 from dataclasses import replace
 
-from smaug.agent.config import DEFAULT_SETTINGS
+from smaug.agent.config import V1_SETTINGS
 from smaug.agent.strategy.brain import Brain
 
 
@@ -13,7 +13,7 @@ def make_bank_state(rounds_left: int, bank_limit: int = 5000) -> dict[str, list]
 
 
 def test_brain_keeps_only_the_last_rounds_in_memory() -> None:
-    brain = Brain(replace(DEFAULT_SETTINGS, history_rounds=3))
+    brain = Brain(replace(V1_SETTINGS, history_rounds=3))
     prev_auctions = {"a1": {"die": 6, "num": 3, "bonus": 7, "bids": [{"a_id": "x", "gold": 700}]}}
     for _ in range(5):
         brain.remember_prices(prev_auctions)
@@ -22,13 +22,13 @@ def test_brain_keeps_only_the_last_rounds_in_memory() -> None:
 
 def test_brain_does_not_bid_on_the_phantom_round() -> None:
     auctions = {"a1": {"die": 6, "num": 3, "bonus": 7}}
-    assert Brain().decide(9000, auctions, {}, make_bank_state(rounds_left=1)) == {}
+    assert Brain(V1_SETTINGS).decide(9000, auctions, {}, make_bank_state(rounds_left=1)) == {}
 
 
 def test_brain_saves_first_then_bids_with_the_surplus() -> None:
     auctions = {"a41": {"die": 12, "num": 4, "bonus": 2}}  # EV 28
     prev_auctions = {"a1": {"die": 6, "num": 3, "bonus": 7, "bids": [{"a_id": "x", "gold": 700}]}}  # prix 40
-    brain = Brain()
+    brain = Brain(V1_SETTINGS)
 
     # 4000 d'or, épargne de 5000 : rien à dépenser
     assert brain.decide(4000, auctions, prev_auctions, make_bank_state(rounds_left=500)) == {}
@@ -39,7 +39,7 @@ def test_brain_saves_first_then_bids_with_the_surplus() -> None:
 def test_brain_survives_an_absurd_history_setting() -> None:
     prev_auctions = {"a1": {"die": 6, "num": 3, "bonus": 7, "bids": [{"a_id": "x", "gold": 700}]}}
     for absurd in [0, -1, -100]:
-        brain = Brain(replace(DEFAULT_SETTINGS, history_rounds=absurd))
+        brain = Brain(replace(V1_SETTINGS, history_rounds=absurd))
         brain.remember_prices(prev_auctions)
         brain.remember_prices(prev_auctions)
         assert brain.price_history == [40]

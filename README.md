@@ -29,6 +29,7 @@ pip install -e . pytest
 | `make battle`  | play for real, using the settings in `.env` |
 | `make rehearsal` | full local game against the teacher's example agents (`ROUNDS=300 OPPONENTS=5`) |
 | `make sim` | one simulated game in seconds, no server (`CLASS=weak\|mixed\|strong ROUNDS=1000 SEED=1`) |
+| `make tournament` | many simulated games per class and setting, summary in `results/tournament.md` (`GAMES=20 FIRST_SEED=1`) |
 
 ## Play
 
