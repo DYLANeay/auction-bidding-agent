@@ -3,6 +3,7 @@
 import asyncio
 import sys
 import time
+from pathlib import Path
 
 from smaug.agent.connection.guard import is_previous_game_over, may_connect
 from smaug.agent.connection.reconnect import RETRY_DELAY_SECONDS, should_call_back
@@ -24,8 +25,9 @@ def main() -> None:
         print("Not connecting, the scoreboard stays as it is.")
         return
 
-    # un seul cerveau pour toute la partie, même après une reconnexion
-    client = SafeClient(settings, Brain())
+    # un seul cerveau et un seul journal pour toute la partie, même après une reconnexion
+    logbook_path = Path("logs") / f"agent_{settings.name}_{time.strftime('%Y%m%d_%H%M%S')}.jsonl"
+    client = SafeClient(settings, Brain(), logbook_path)
     last_rounds_left = None
     last_message_at = None
 
