@@ -7,31 +7,33 @@ from multiprocessing import Pool
 from pathlib import Path
 from statistics import mean
 
-from smaug.agent.config import DEFAULT_SETTINGS
+from smaug.agent.config import DEFAULT_SETTINGS, V1_SETTINGS
 from smaug.sim.classes import CLASSES, OUR_NAME
 from smaug.sim.engine import play_game
 from smaug.sim.grades import grade_for
 from smaug.sim.players import Player
 
-# chaque variante ne change qu'un seul réglage par rapport à la version actuelle
+# "current" suit les réglages par défaut ; les autres variantes partent de la première version (v1)
 VARIANTS = {
     "current": DEFAULT_SETTINGS,
-    "min EV 4": replace(DEFAULT_SETTINGS, min_expected_value=4),
-    "min EV 6": replace(DEFAULT_SETTINGS, min_expected_value=6),
-    "min EV 8": replace(DEFAULT_SETTINGS, min_expected_value=8),
-    "savings 50%": replace(DEFAULT_SETTINGS, reserve_factor=0.5),
-    "savings 140%": replace(DEFAULT_SETTINGS, reserve_factor=1.4),
-    "margin 5%": replace(DEFAULT_SETTINGS, margin=0.05),
-    "margin 30%": replace(DEFAULT_SETTINGS, margin=0.30),
-    "window 10": replace(DEFAULT_SETTINGS, history_rounds=10),
-    "window 40": replace(DEFAULT_SETTINGS, history_rounds=40),
-    "endgame margin 30%": replace(DEFAULT_SETTINGS, endgame_margin=0.30),
-    "endgame margin 100%": replace(DEFAULT_SETTINGS, endgame_margin=1.00),
-    # étape 3 : les meilleures idées combinées
-    "combo A": replace(DEFAULT_SETTINGS, min_expected_value=8, margin=0.30),
-    "combo B": replace(DEFAULT_SETTINGS, min_expected_value=6, margin=0.30),
-    "combo C": replace(DEFAULT_SETTINGS, min_expected_value=8, margin=0.30, history_rounds=10),
-    "combo D": replace(DEFAULT_SETTINGS, min_expected_value=6, margin=0.30, history_rounds=10),
+    "v1": V1_SETTINGS,
+    # étape 2 : un seul réglage change par rapport à la v1
+    "min EV 4": replace(V1_SETTINGS, min_expected_value=4),
+    "min EV 6": replace(V1_SETTINGS, min_expected_value=6),
+    "min EV 8": replace(V1_SETTINGS, min_expected_value=8),
+    "savings 50%": replace(V1_SETTINGS, reserve_factor=0.5),
+    "savings 140%": replace(V1_SETTINGS, reserve_factor=1.4),
+    "margin 5%": replace(V1_SETTINGS, margin=0.05),
+    "margin 30%": replace(V1_SETTINGS, margin=0.30),
+    "window 10": replace(V1_SETTINGS, history_rounds=10),
+    "window 40": replace(V1_SETTINGS, history_rounds=40),
+    "endgame margin 30%": replace(V1_SETTINGS, endgame_margin=0.30),
+    "endgame margin 100%": replace(V1_SETTINGS, endgame_margin=1.00),
+    # étape 3 : les meilleures idées combinées (combo C est devenu les réglages par défaut)
+    "combo A": replace(V1_SETTINGS, min_expected_value=8, margin=0.30),
+    "combo B": replace(V1_SETTINGS, min_expected_value=6, margin=0.30),
+    "combo C": replace(V1_SETTINGS, min_expected_value=8, margin=0.30, history_rounds=10),
+    "combo D": replace(V1_SETTINGS, min_expected_value=6, margin=0.30, history_rounds=10),
 }
 
 
@@ -109,7 +111,9 @@ def main(arguments: list[str] | None = None) -> None:
     output = Path(values.output)
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(
-        f"# Tournament\n\n{values.games} games per class, {values.rounds} rounds, "
+        f"# Tournament\n\n"
+        f"Raw output of `make tournament`, one step in choosing the settings for `expected_results.md`.\n\n"
+        f"{values.games} games per class, {values.rounds} rounds, "
         f"seeds {values.first_seed} to {values.first_seed + values.games - 1}. "
         f"Average place of our agent out of 20 (lower is better), then the grade counts.\n\n{table}\n"
     )

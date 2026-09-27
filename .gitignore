@@ -38,3 +38,8 @@ docs/
 # notes and runtime files
 context/ai-maths.pdf
 logs/
+
+# raw tournament data, kept locally only
+results/tournament.md
+results/combinations.md
+results/confirmation.md
