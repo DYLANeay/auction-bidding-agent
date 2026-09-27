@@ -27,6 +27,7 @@ pip install -e . pytest
 | `make test`    | run the tests                         |
 | `make check`   | run before every commit               |
 | `make battle`  | play for real, using the settings in `.env` |
+| `make rehearsal` | full local game against the teacher's example agents (`ROUNDS=300 OPPONENTS=5`) |
 
 ## Play
 
