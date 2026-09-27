@@ -13,21 +13,10 @@ from websockets.exceptions import ConnectionClosed, ConnectionClosedOK, InvalidH
 
 from smaug.agent.connection.settings import ConnectionSettings
 from smaug.agent.control import ControlFile, settings_for_this_round
-from smaug.agent.logbook import open_logbook, write_round
+from smaug.agent.logbook import open_logbook, round_entry, write_round
 from smaug.agent.safety.airbag import play_round
 from smaug.agent.safety.incoming import read_round
 from smaug.agent.strategy.brain import Brain
-
-
-# but : notre or au moment du tour, seulement pour le journal, jamais pour décider
-def round_gold(text: Any, agent_id: str) -> int:
-    try:
-        current_round = read_round(text, agent_id)
-    except Exception:  # noqa: BLE001
-        return 0
-    if current_round is None:
-        return 0
-    return current_round.gold
 
 
 @dataclass
@@ -95,6 +84,17 @@ class SafeClient(AuctionGameClient):
         except OSError:
             pass
 
+    def log_round(self, round_number: int, text: Any, answer: dict, paused: bool, response_ms: float) -> None:
+        # le journal ne doit jamais arrêter l'agent
+        if self.logbook is None:
+            return
+        try:
+            current_round = read_round(text, self.agent_id)
+            entry = round_entry(round_number, current_round, answer, self.brain, paused, response_ms, self.agent_id)
+        except Exception:  # noqa: BLE001
+            return
+        write_round(self.logbook, entry)
+
     async def call(self) -> CallReport:
         """Plays until the line drops, then tells why"""
         url = f"{ws_scheme(self.use_ssl)}://{self.host}:{self.port}/ws/{self.token}"
@@ -117,15 +117,17 @@ class SafeClient(AuctionGameClient):
                     if rounds_left is not None:
                         report.rounds_left = rounds_left
                     self.write_log(text)
+                    started = time.perf_counter()
                     settings, paused = settings_for_this_round(self.control_file, self.base_settings)
                     self.brain.settings = settings
                     if paused:
                         answer = {"bids": {}, "points_to_spend": 0}
                     else:
                         answer = play_round(self.brain, text, self.agent_id)
-                    if self.logbook is not None:
-                        write_round(self.logbook, report.rounds_received, round_gold(text, self.agent_id), answer)
+                    response_ms = (time.perf_counter() - started) * 1000
                     await server.send(json.dumps(answer))
+                    # le journal après l'envoi, pour ne jamais retarder la mise
+                    self.log_round(report.rounds_received, text, answer, paused, response_ms)
         except ConnectionClosedOK:
             report.ended_because = why_closed_normally(
                 report.rounds_received, report.rounds_left
