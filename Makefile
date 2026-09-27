@@ -23,5 +23,5 @@ rehearsal:  # full local game: make rehearsal ROUNDS=300 OPPONENTS=5
 sim:  # one simulated game in seconds: make sim CLASS=mixed ROUNDS=1000 SEED=1
 	uv run python -m smaug.sim.run_one --class $(or $(CLASS),mixed) --rounds $(or $(ROUNDS),1000) --seed $(or $(SEED),1)
 
-tournament:  # many simulated games per class and setting: make tournament GAMES=20 FIRST_SEED=1
-	uv run python -m smaug.sim.tournament --games $(or $(GAMES),20) --first-seed $(or $(FIRST_SEED),1)
+tournament:  # many simulated games: make tournament GAMES=20 FIRST_SEED=1 VARIANTS="current,combo A" OUTPUT=results/x.md
+	uv run python -m smaug.sim.tournament --games $(or $(GAMES),20) --first-seed $(or $(FIRST_SEED),1) --variants "$(VARIANTS)" --output $(or $(OUTPUT),results/tournament.md)

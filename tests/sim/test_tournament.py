@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from smaug.sim.tournament import grade_summary, main, play_one_job
 
 
@@ -21,3 +23,17 @@ def test_a_tiny_tournament_writes_the_summary(tmp_path: Path) -> None:
     summary = output.read_text()
     assert "| current |" in summary
     assert "| min EV 6 |" in summary
+
+
+def test_only_the_chosen_variants_are_played(tmp_path: Path) -> None:
+    output = tmp_path / "tournament.md"
+    main(["--games", "1", "--rounds", "30", "--variants", "current, combo A", "--output", str(output)])
+    summary = output.read_text()
+    assert "| current |" in summary
+    assert "| combo A |" in summary
+    assert "| min EV 6 |" not in summary
+
+
+def test_an_unknown_variant_stops_before_playing() -> None:
+    with pytest.raises(SystemExit):
+        main(["--variants", "magic"])

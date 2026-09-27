@@ -27,6 +27,11 @@ VARIANTS = {
     "window 40": replace(DEFAULT_SETTINGS, history_rounds=40),
     "endgame margin 30%": replace(DEFAULT_SETTINGS, endgame_margin=0.30),
     "endgame margin 100%": replace(DEFAULT_SETTINGS, endgame_margin=1.00),
+    # étape 3 : les meilleures idées combinées
+    "combo A": replace(DEFAULT_SETTINGS, min_expected_value=8, margin=0.30),
+    "combo B": replace(DEFAULT_SETTINGS, min_expected_value=6, margin=0.30),
+    "combo C": replace(DEFAULT_SETTINGS, min_expected_value=8, margin=0.30, history_rounds=10),
+    "combo D": replace(DEFAULT_SETTINGS, min_expected_value=6, margin=0.30, history_rounds=10),
 }
 
 
@@ -61,10 +66,19 @@ def main(arguments: list[str] | None = None) -> None:
     parser.add_argument("--rounds", type=int, default=1000)
     parser.add_argument("--first-seed", type=int, default=1)
     parser.add_argument("--output", default="results/tournament.md")
+    parser.add_argument("--variants", default="", help="comma separated names, all variants if empty")
     values = parser.parse_args(arguments)
 
+    selected = list(VARIANTS)
+    if values.variants != "":
+        selected = []
+        for variant_name in values.variants.split(","):
+            if variant_name.strip() not in VARIANTS:
+                parser.error(f"unknown variant: {variant_name.strip()}")
+            selected.append(variant_name.strip())
+
     jobs = []
-    for variant_name in VARIANTS:
+    for variant_name in selected:
         for class_name in CLASSES:
             for seed in range(values.first_seed, values.first_seed + values.games):
                 jobs.append((variant_name, class_name, seed, values.rounds))
@@ -81,7 +95,7 @@ def main(arguments: list[str] | None = None) -> None:
         grades.setdefault((variant_name, class_name), []).append(grade)
 
     lines = [f"| variant | {' | '.join(CLASSES)} | average |", "|---" * (len(CLASSES) + 2) + "|"]
-    for variant_name in VARIANTS:
+    for variant_name in selected:
         cells = []
         averages = []
         for class_name in CLASSES:
