@@ -42,6 +42,18 @@ make battle
 
 The agent waits for the game to start, plays every round and calls back after a drop while the game is still running. If the previous game is already over, it asks before connecting, because connecting would reset the scoreboard.
 
+## Live control
+
+The agent plays alone with its default settings. To adjust it during a game, without
+restarting it, write `logs/control.json`; it is read every round:
+
+```json
+{"margin": 0.5, "min_expected_value": 2, "history_rounds": 10, "pause": false}
+```
+
+Every key is optional and every value is bounded. Remove a key or the file to go back to
+the defaults. `"pause": true` keeps the agent connected but sends no bids.
+
 ## Layout
 
 ```
