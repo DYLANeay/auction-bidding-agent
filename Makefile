@@ -4,7 +4,7 @@
 -include .env
 export
 
-.PHONY: install test check battle rehearsal
+.PHONY: install test check battle rehearsal sim
 
 install:  # python 3.12 and all dependencies into .venv
 	uv sync --all-groups
@@ -19,3 +19,6 @@ battle:  # play for real, with sleep blocked and the settings from .env
 
 rehearsal:  # full local game: make rehearsal ROUNDS=300 OPPONENTS=5
 	scripts/local_game.sh $(or $(ROUNDS),300) $(or $(OPPONENTS),5)
+
+sim:  # one simulated game in seconds: make sim CLASS=mixed ROUNDS=1000 SEED=1
+	uv run python -m smaug.sim.run_one --class $(or $(CLASS),mixed) --rounds $(or $(ROUNDS),1000) --seed $(or $(SEED),1)
