@@ -4,7 +4,7 @@
 -include .env
 export
 
-.PHONY: install test check battle
+.PHONY: install test check battle rehearsal
 
 install:  # python 3.12 and all dependencies into .venv
 	uv sync --all-groups
@@ -16,3 +16,6 @@ check: test  # run before every commit
 
 battle:  # play for real, with sleep blocked and the settings from .env
 	systemd-inhibit --what=idle:sleep --why="auction battle" uv run python -m smaug.agent.connection.run
+
+rehearsal:  # full local game: make rehearsal ROUNDS=300 OPPONENTS=5
+	scripts/local_game.sh $(or $(ROUNDS),300) $(or $(OPPONENTS),5)
