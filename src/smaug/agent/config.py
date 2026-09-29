@@ -14,6 +14,8 @@ class Settings:
     endgame_finish_rounds: int = 10  # l'épargne est à zéro ce nombre de tours avant la fin, avant le pic
     endgame_margin: float = 0.60  # en fin de partie : gros coups, on paie plus cher pour gagner à coup sûr
     default_price: float = 20.0  # or par point, utilisé seulement avant tout historique
+    sell_share: float = 0.0  # part de nos points vendue par tour quand le taux est bon ; 0 = vente éteinte
+    sell_ratio: float = 2.0  # vendre seulement si la banque paie au moins 2 fois notre prix du marché
 
 
 # réglages choisis par le tournoi (results/confirmation.md)

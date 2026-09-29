@@ -131,6 +131,28 @@ def read_gold(states: Any, agent_id: str) -> int | None:
     return gold
 
 
+# but : retrouver nos points parmi l'état de tous les joueurs, 0 si on ne les trouve pas
+def read_points(states: Any, agent_id: str) -> int:
+    """Our own points, or 0 if we cannot read them (then nothing is sold)"""
+    if not isinstance(states, dict):
+        return 0
+    our_state = states.get(agent_id)
+    if not isinstance(our_state, dict):
+        return 0
+    points = to_whole_number(our_state.get("points"))
+    if points is None or points < 0:
+        return 0
+    return points
+
+
+def read_gold_per_point(raw: Any) -> float:
+    """The bank's buying rate, or 0 if it is missing or absurd"""
+    rate = to_number(raw)
+    if rate is None or rate < 0:
+        return 0.0
+    return rate
+
+
 # but : transformer le texte brut du serveur en tour entièrement vérifié, ou dire qu'il faut sauter le tour
 def read_round(text: Any, agent_id: str) -> Round | None:
     """A fully checked round from the raw server text, or None to skip the round"""
@@ -149,4 +171,6 @@ def read_round(text: Any, agent_id: str) -> Round | None:
 
     auctions = read_auctions(message.get("auctions"))
     prev_auctions = read_prev_auctions(message.get("prev_auctions"))
-    return Round(gold, auctions, prev_auctions, bank_state)
+    points = read_points(message.get("states"), agent_id)
+    gold_per_point = read_gold_per_point(message.get("gold_per_point"))
+    return Round(gold, auctions, prev_auctions, bank_state, points, gold_per_point)

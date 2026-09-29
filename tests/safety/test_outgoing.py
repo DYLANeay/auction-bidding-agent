@@ -1,6 +1,6 @@
 import numpy as np
 
-from smaug.agent.safety.outgoing import clean_bids
+from smaug.agent.safety.outgoing import clean_bids, clean_sale
 
 
 def test_clean_bids_keeps_good_bids_as_python_ints() -> None:
@@ -24,3 +24,19 @@ def test_clean_bids_never_exceed_our_gold() -> None:
 def test_clean_bids_of_garbage_is_empty() -> None:
     assert clean_bids(None, {"a1"}, gold=1000) == {}
     assert clean_bids(["a1", 300], {"a1"}, gold=1000) == {}
+
+
+def test_clean_sale_keeps_a_sane_sale_as_a_python_int() -> None:
+    sale = clean_sale(np.int64(120), points=10_000)
+    assert sale == 120
+    assert type(sale) is int
+
+
+def test_clean_sale_never_goes_below_the_floor_of_points() -> None:
+    assert clean_sale(900, points=1000) == 500
+    assert clean_sale(50, points=300) == 0
+
+
+def test_clean_sale_of_garbage_is_zero() -> None:
+    for junk in [None, -5, "lots", float("nan"), [], True]:
+        assert clean_sale(junk, points=10_000) == 0
