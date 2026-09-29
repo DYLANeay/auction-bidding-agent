@@ -31,10 +31,17 @@ def play_game(make_players: Callable[[], list[Player]], rounds: int, seed: int) 
             break
         text = json.dumps(state)
         for number, player in enumerate(players):
-            answer = ask_player(player, text, f"agent_{number}")
-            bids = answer.get("bids", {}) if isinstance(answer, dict) else {}
+            agent_id = f"agent_{number}"
+            answer = ask_player(player, text, agent_id)
+            if not isinstance(answer, dict):
+                continue
+            # comme le serveur (server.py ligne 369) : la vente de points, puis les mises
+            house.register_point_purchase(agent_id, answer.get("points_to_spend", 0))
+            bids = answer.get("bids", {})
+            if not isinstance(bids, dict):
+                continue
             for auction_id, gold in bids.items():
-                house.register_bid(f"agent_{number}", auction_id, gold)
+                house.register_bid(agent_id, auction_id, gold)
 
     ranking = []
     for number, player in enumerate(players):
