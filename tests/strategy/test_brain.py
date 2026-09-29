@@ -1,6 +1,6 @@
 from dataclasses import replace
 
-from smaug.agent.config import V1_SETTINGS
+from smaug.agent.config import V1_SETTINGS, Settings
 from smaug.agent.strategy.brain import Brain
 
 
@@ -43,3 +43,10 @@ def test_brain_survives_an_absurd_history_setting() -> None:
         brain.remember_prices(prev_auctions)
         brain.remember_prices(prev_auctions)
         assert brain.price_history == [40]
+
+
+def test_brain_sells_only_when_selling_is_on() -> None:
+    assert Brain().decide_sale(20_000, 60.0, make_bank_state(500)) == 0
+    assert Brain(Settings(sell_share=0.01)).decide_sale(20_000, 60.0, make_bank_state(500)) == 200
+    # fin de partie : on garde tout
+    assert Brain(Settings(sell_share=0.01)).decide_sale(20_000, 60.0, make_bank_state(50)) == 0

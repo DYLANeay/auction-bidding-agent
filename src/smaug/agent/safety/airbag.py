@@ -2,8 +2,9 @@
 
 from typing import Any
 
+from smaug.agent.safety.game_round import Round
 from smaug.agent.safety.incoming import read_round
-from smaug.agent.safety.outgoing import clean_bids
+from smaug.agent.safety.outgoing import clean_bids, clean_sale
 from smaug.agent.strategy.brain import Brain
 
 
@@ -24,6 +25,16 @@ def safe_decide(
     return clean_bids(raw_bids, set(auctions), gold)
 
 
+# vendre des points dans une zone protégée : au moindre souci, on ne vend rien
+def safe_sale(brain: Brain, current_round: Round) -> int:
+    """The cleaned number of points to sell, or 0 if anything goes wrong"""
+    try:
+        raw_sale = brain.decide_sale(current_round.points, current_round.gold_per_point, current_round.bank_state)
+    except Exception:  # noqa: BLE001
+        return 0
+    return clean_sale(raw_sale, current_round.points)
+
+
 # but : répondre à un message du serveur, quoi qu'il arrive, avec une réponse toujours valide
 def play_round(brain: Brain, text: Any, agent_id: str) -> dict:
     """The answer to send for one raw server message, whatever happens"""
@@ -39,7 +50,8 @@ def play_round(brain: Brain, text: Any, agent_id: str) -> dict:
             current_round.prev_auctions,
             current_round.bank_state,
         )
-        return {"bids": bids, "points_to_spend": 0}
+        sale = safe_sale(brain, current_round)
+        return {"bids": bids, "points_to_spend": sale}
     except Exception:  # noqa: BLE001
         # dernier filet : même un bug dans l'airbag ne doit pas arrêter l'agent
         return no_bids
