@@ -6,9 +6,11 @@ import random
 import time
 from typing import Any
 
+from smaug.agent.config import NO_SELLING_SETTINGS
 from smaug.agent.safety.airbag import play_round
 from smaug.agent.safety.incoming import bid_gold
 from smaug.agent.strategy.brain import Brain
+from smaug.agent.strategy.selling import MIN_POINTS_KEPT
 
 MESSAGES = 10_000
 DIE_SIZES = [2, 3, 4, 6, 8, 10, 12, 20]
@@ -40,7 +42,9 @@ def random_message(generator: random.Random) -> dict:
 
     rounds_left = generator.randint(1, 1000)
     return {
-        "states": {"me": {"gold": generator.randint(0, 20000), "points": 0}},
+        "states": {"me": {"gold": generator.randint(0, 20000), "points": generator.randint(0, 50000)}},
+        # large : les mises tirées au hasard donnent des prix du marché très variés
+        "gold_per_point": generator.uniform(0, 1500),
         "auctions": auctions,
         "prev_auctions": prev_auctions,
         "remainder_gold_income": [1000] * rounds_left,
@@ -51,7 +55,7 @@ def random_message(generator: random.Random) -> dict:
 
 def break_message(generator: random.Random, message: dict) -> None:
     """Damages one random part of the message, the way a trapped server could"""
-    damage = generator.randint(1, 7)
+    damage = generator.randint(1, 9)
     if damage == 1:
         key = generator.choice(list(message))
         del message[key]
@@ -73,8 +77,12 @@ def break_message(generator: random.Random, message: dict) -> None:
         key = generator.choice(["remainder_gold_income", "remainder_bank_interest", "remainder_bank_limit"])
         values = message[key]
         values[generator.randrange(len(values))] = generator.choice(JUNK)
-    else:
+    elif damage == 7:
         message["states"]["me"]["gold"] = generator.choice(JUNK)
+    elif damage == 8:
+        message["states"]["me"]["points"] = generator.choice(JUNK)
+    else:
+        message["gold_per_point"] = generator.choice(JUNK)
 
 
 def gold_we_can_spend(message: Any) -> int | None:
@@ -90,9 +98,24 @@ def gold_we_can_spend(message: Any) -> int | None:
     return int(gold)
 
 
-def check_answer(answer: dict, gold: int | None) -> None:
+def points_we_can_sell(message: Any) -> int:
+    """The most points the agent may sell: our points above the floor, 0 if unusable"""
+    try:
+        points = message["states"]["me"]["points"]
+    except (KeyError, TypeError):
+        return 0
+    if isinstance(points, bool) or not isinstance(points, (int, float)):
+        return 0
+    if not math.isfinite(points) or points < 0:
+        return 0
+    return max(int(points) - MIN_POINTS_KEPT, 0)
+
+
+def check_answer(answer: dict, gold: int | None, most_sold: int) -> None:
     assert set(answer) == {"bids", "points_to_spend"}
-    assert answer["points_to_spend"] == 0
+    sale = answer["points_to_spend"]
+    assert type(sale) is int
+    assert 0 <= sale <= most_sold
     total = 0
     for auction_id, bid in answer["bids"].items():
         assert type(auction_id) is str
@@ -107,11 +130,11 @@ def check_answer(answer: dict, gold: int | None) -> None:
     json.dumps(answer)
 
 
-def test_the_agent_survives_thousands_of_random_and_broken_messages() -> None:
+def run_crash_test(brain: Brain, selling: bool) -> int:
+    """Plays every message through the airbag and returns how many answers sold points"""
     generator = random.Random(42)
-    # un seul cerveau pour tous les messages, comme pendant une vraie partie
-    brain = Brain()
     durations = []
+    sales = 0
 
     for _ in range(MESSAGES):
         roll = generator.random()
@@ -119,19 +142,39 @@ def test_the_agent_survives_thousands_of_random_and_broken_messages() -> None:
             # du pur n'importe quoi à la place du message
             text: Any = generator.choice(["", "null", "{", "[1, 2]", "x" * 1000, "[" * 5000, 42, None])
             gold = None
+            most_sold = 0
         else:
             message = random_message(generator)
             if roll < 0.6:
                 break_message(generator, message)
             gold = gold_we_can_spend(message)
+            most_sold = points_we_can_sell(message)
             text = json.dumps(message)
+        if not selling:
+            # vente éteinte : jamais un seul point vendu
+            most_sold = 0
 
         start = time.perf_counter()
         answer = play_round(brain, text, "me")
         durations.append(time.perf_counter() - start)
 
-        check_answer(answer, gold)
+        check_answer(answer, gold, most_sold)
+        if answer["points_to_spend"] > 0:
+            sales += 1
 
     durations.sort()
     slowest_but_one_percent = durations[int(len(durations) * 0.99)]
     assert slowest_but_one_percent < 0.010
+    return sales
+
+
+def test_the_agent_survives_thousands_of_random_and_broken_messages() -> None:
+    # un seul cerveau pour tous les messages, comme pendant une vraie partie
+    run_crash_test(Brain(NO_SELLING_SETTINGS), selling=False)
+
+
+def test_the_agent_survives_them_too_while_selling_points() -> None:
+    # exactement l'agent de la bataille
+    sales = run_crash_test(Brain(), selling=True)
+    # sans assez de ventes, ce test ne prouverait rien
+    assert sales >= 100

@@ -41,3 +41,24 @@ def test_the_phantom_round_is_never_asked() -> None:
 
     play_game(spy_and_one_opponent, rounds=50, seed=1)
     assert spy.questions == 49
+
+
+class Seller(Player):
+    """Never bids, sells 10 points every round"""
+
+    def answer(self, text: str, agent_id: str) -> Any:
+        return {"bids": {}, "points_to_spend": 10}
+
+
+def test_a_point_sale_is_settled_like_on_the_server() -> None:
+    def seller_and_one_opponent() -> list[Player]:
+        return [Seller("seller"), tiny_bid("tiny")]
+
+    def quiet_and_one_opponent() -> list[Player]:
+        return [Spy("quiet"), tiny_bid("tiny")]
+
+    with_sale = {name: (points, gold) for points, gold, name in play_game(seller_and_one_opponent, rounds=50, seed=1)}
+    without_sale = {name: (points, gold) for points, gold, name in play_game(quiet_and_one_opponent, rounds=50, seed=1)}
+    # 0 point au départ : il descend jusqu'au plancher de -100 du serveur, et reçoit de l'or en échange
+    assert with_sale["seller"][0] == -100
+    assert with_sale["seller"][1] > without_sale["quiet"][1]

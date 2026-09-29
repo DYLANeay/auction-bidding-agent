@@ -7,7 +7,7 @@ from multiprocessing import Pool
 from pathlib import Path
 from statistics import mean
 
-from smaug.agent.config import DEFAULT_SETTINGS, V1_SETTINGS
+from smaug.agent.config import DEFAULT_SETTINGS, NO_SELLING_SETTINGS, V1_SETTINGS
 from smaug.sim.classes import CLASSES, OUR_NAME
 from smaug.sim.engine import play_game
 from smaug.sim.grades import grade_for
@@ -16,6 +16,7 @@ from smaug.sim.players import Player
 # "current" suit les réglages par défaut ; les autres variantes partent de la première version (v1)
 VARIANTS = {
     "current": DEFAULT_SETTINGS,
+    "no selling": NO_SELLING_SETTINGS,
     "v1": V1_SETTINGS,
     # étape 2 : un seul réglage change par rapport à la v1
     "min EV 4": replace(V1_SETTINGS, min_expected_value=4),
@@ -34,6 +35,15 @@ VARIANTS = {
     "combo B": replace(V1_SETTINGS, min_expected_value=6, margin=0.30),
     "combo C": replace(V1_SETTINGS, min_expected_value=8, margin=0.30, history_rounds=10),
     "combo D": replace(V1_SETTINGS, min_expected_value=6, margin=0.30, history_rounds=10),
+    # vente de points : les réglages de la bataille, plus la vente (sous-issue #33)
+    "sell 0.5% x2": replace(DEFAULT_SETTINGS, sell_share=0.005, sell_ratio=2.0),
+    "sell 1% x2": replace(DEFAULT_SETTINGS, sell_share=0.01, sell_ratio=2.0),
+    "sell 2% x2": replace(DEFAULT_SETTINGS, sell_share=0.02, sell_ratio=2.0),
+    "sell 3% x2": replace(DEFAULT_SETTINGS, sell_share=0.03, sell_ratio=2.0),
+    "sell 5% x2": replace(DEFAULT_SETTINGS, sell_share=0.05, sell_ratio=2.0),
+    "sell 0.5% x2.5": replace(DEFAULT_SETTINGS, sell_share=0.005, sell_ratio=2.5),
+    "sell 1% x2.5": replace(DEFAULT_SETTINGS, sell_share=0.01, sell_ratio=2.5),
+    "sell 2% x2.5": replace(DEFAULT_SETTINGS, sell_share=0.02, sell_ratio=2.5),
 }
 
 

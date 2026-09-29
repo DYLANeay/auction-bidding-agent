@@ -10,7 +10,16 @@ from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.widgets import DataTable, Sparkline, Static
 
-from smaug.tui.controls import describe, nudge, read_instructions, with_pause, with_preset, write_instructions
+from smaug.tui.controls import (
+    describe,
+    is_selling,
+    nudge,
+    read_instructions,
+    with_pause,
+    with_preset,
+    with_selling,
+    write_instructions,
+)
 from smaug.tui.panels import (
     agent_text,
     control_text,
@@ -37,6 +46,7 @@ class MonitorApp(App):
         ("e", "lever('min_expected_value', -1)", "min EV down"),
         ("W", "lever('history_rounds', 1)", "window up"),
         ("w", "lever('history_rounds', -1)", "window down"),
+        ("s", "toggle_selling", "selling on or off"),
         ("p", "pause", "pause or resume"),
         ("1", "preset('normal')", "normal"),
         ("2", "preset('mixed')", "mixed class"),
@@ -164,6 +174,13 @@ class MonitorApp(App):
             return {}
 
         self.send("factory settings", update)
+
+    def action_toggle_selling(self) -> None:
+        # couper la vente n'est jamais dangereux : pas de confirmation
+        def update(instructions: dict) -> dict:
+            return with_selling(instructions, not is_selling(instructions))
+
+        self.send("selling", update)
 
     def action_pause(self) -> None:
         instructions = read_instructions(self.control_path)

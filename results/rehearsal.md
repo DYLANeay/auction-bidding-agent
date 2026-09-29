@@ -37,3 +37,16 @@ and points kept. It missed 20 rounds and then played normally until the end.
 - The opponents are the teacher's example agents, not the real class.
 - Trapped messages from the server are covered by the crash test (10,000 random or broken
   messages), not by these games.
+
+## Second full rehearsal, with point selling
+
+29 September 2026, same setup, with the final agent (selling 2% of its points when the bank
+pays at least twice its market price), no intervention:
+
+- 1st of 20 (A) with 43,586 points, almost three times the 2nd (14,962); points are not
+  comparable between the two rehearsals, as each game draws its own dice, salaries and rates
+- 1000 rounds, 1000 logbook lines, no unreadable round, never paused, no error
+- 8,616 bids won and 2,411 lost (78% win rate)
+- 274 sales, 123,108 points sold in total and bought back at auction with the gold; the last
+  sale came 112 rounds before the end, as the rule forbids selling in the last 110 rounds
+- response time: median 0.43 ms, 99% under 0.69 ms, slowest 0.87 ms

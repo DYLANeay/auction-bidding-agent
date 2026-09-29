@@ -81,6 +81,8 @@ def agent_text(agent: dict | None) -> Text:
     row(lines, "played", rounds)
     row(lines, "gold", str(agent["gold"]), YELLOW)
     row(lines, "bids now", f"{agent['bids_count']} for {agent['bids_gold']:.0f} gold")
+    if agent["points_sold"] > 0:
+        row(lines, "sold now", f"{agent['points_sold']} points to the bank", ORANGE)
     lines.append("\n")
 
     heading(lines, "Risk, last 20 rounds", MAGENTA)
@@ -108,6 +110,10 @@ def agent_text(agent: dict | None) -> Text:
     row(lines, "margin", percent(agent["margin"]))
     row(lines, "min EV", f"{agent['min_expected_value']:g}")
     row(lines, "price window", f"{agent['history_rounds']} rounds")
+    if agent["sell_share"] > 0:
+        row(lines, "selling", f"{percent(agent['sell_share'])} of points when the bank pays 2x our price")
+    else:
+        row(lines, "selling", "off", COMMENT)
 
     hint = agent_summary_hint(agent)
     if hint is not None:
@@ -218,6 +224,7 @@ KEYS = [
     ("+ -", "margin"),
     ("e E", "min EV"),
     ("w W", "window"),
+    ("s", "selling"),
     ("p", "pause"),
     ("1", "normal"),
     ("2", "mixed"),
