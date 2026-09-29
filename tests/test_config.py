@@ -12,6 +12,8 @@ def test_defaults_are_the_tournament_winner() -> None:
     assert DEFAULT_SETTINGS.endgame_rounds == 100
     assert DEFAULT_SETTINGS.endgame_finish_rounds == 10
     assert DEFAULT_SETTINGS.endgame_margin == 0.60
+    # la vente de points reste éteinte tant que le tournoi n'a pas prouvé un gain
+    assert DEFAULT_SETTINGS.sell_share == 0.0
 
 
 def test_settings_cannot_be_changed_by_accident() -> None:
