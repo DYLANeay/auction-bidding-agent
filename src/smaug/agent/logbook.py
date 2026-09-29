@@ -48,6 +48,7 @@ def round_entry(
         "margin": settings.margin,
         "min_expected_value": settings.min_expected_value,
         "history_rounds": settings.history_rounds,
+        "sell_share": settings.sell_share,
         "paused": paused,
         "rounds_left": rounds_left,
         "response_ms": round(response_ms, 2),

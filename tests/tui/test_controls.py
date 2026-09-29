@@ -6,7 +6,16 @@ import json
 from smaug.agent.config import DEFAULT_SETTINGS
 from smaug.agent.control import ControlFile, apply_control
 from smaug.tui.app import MonitorApp
-from smaug.tui.controls import describe, nudge, read_instructions, with_pause, with_preset, write_instructions
+from smaug.tui.controls import (
+    describe,
+    is_selling,
+    nudge,
+    read_instructions,
+    with_pause,
+    with_preset,
+    with_selling,
+    write_instructions,
+)
 
 
 def test_nudge_starts_from_the_factory_setting() -> None:
@@ -70,9 +79,28 @@ def test_keys_write_control_json(tmp_path) -> None:
             await pilot.press("p")
             assert "pause" not in written()
 
+            await pilot.press("s")
+            assert written()["sell_share"] == 0.0
+            await pilot.press("s")
+            assert "sell_share" not in written()
+
             await pilot.press("3")
-            assert written() == {"min_expected_value": 2.0, "margin": 0.15, "history_rounds": 20}
+            assert written() == {"min_expected_value": 2.0, "margin": 0.15, "history_rounds": 20, "sell_share": 0.0}
             await pilot.press("0")
             assert written() == {}
 
     asyncio.run(run())
+
+
+def test_selling_switch_goes_off_then_back_to_the_factory_setting() -> None:
+    assert is_selling({})
+    off = with_selling({"margin": 0.4}, False)
+    assert off == {"margin": 0.4, "sell_share": 0.0}
+    assert not is_selling(off)
+    assert with_selling(off, True) == {"margin": 0.4}
+    assert describe(off) == "margin 40%, selling off"
+
+
+def test_the_first_version_preset_does_not_sell() -> None:
+    assert not is_selling(with_preset({}, "v1"))
+    assert is_selling(with_preset({}, "mixed"))
