@@ -10,3 +10,6 @@ class Round:
     auctions: dict[str, dict]
     prev_auctions: dict[str, dict]
     bank_state: dict[str, list]
+    # pour la vente de points : 0 quand l'info manque, et alors on ne vend rien
+    points: int = 0
+    gold_per_point: float = 0.0
