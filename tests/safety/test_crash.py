@@ -6,7 +6,7 @@ import random
 import time
 from typing import Any
 
-from smaug.agent.config import Settings
+from smaug.agent.config import NO_SELLING_SETTINGS
 from smaug.agent.safety.airbag import play_round
 from smaug.agent.safety.incoming import bid_gold
 from smaug.agent.strategy.brain import Brain
@@ -170,10 +170,11 @@ def run_crash_test(brain: Brain, selling: bool) -> int:
 
 def test_the_agent_survives_thousands_of_random_and_broken_messages() -> None:
     # un seul cerveau pour tous les messages, comme pendant une vraie partie
-    run_crash_test(Brain(), selling=False)
+    run_crash_test(Brain(NO_SELLING_SETTINGS), selling=False)
 
 
 def test_the_agent_survives_them_too_while_selling_points() -> None:
-    sales = run_crash_test(Brain(Settings(sell_share=0.05)), selling=True)
+    # exactement l'agent de la bataille
+    sales = run_crash_test(Brain(), selling=True)
     # sans assez de ventes, ce test ne prouverait rien
     assert sales >= 100

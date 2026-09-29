@@ -9,6 +9,8 @@ from smaug.agent.config import Settings
 MARGIN_RANGE = (0.0, 1.0)
 MIN_EXPECTED_VALUE_RANGE = (0.0, 20.0)
 HISTORY_ROUNDS_RANGE = (1, 100)
+# jamais plus de 5 % de nos points vendus par tour, même avec une faute de frappe
+SELL_SHARE_RANGE = (0.0, 0.05)
 
 
 def bounded(value: float, low: float, high: float) -> float:
@@ -50,6 +52,10 @@ def apply_control(base_settings: Settings, instructions: dict) -> tuple[Settings
     history_rounds = instructions.get("history_rounds")
     if isinstance(history_rounds, (int, float)):
         settings = replace(settings, history_rounds=int(bounded(history_rounds, *HISTORY_ROUNDS_RANGE)))
+
+    sell_share = instructions.get("sell_share")
+    if isinstance(sell_share, (int, float)):
+        settings = replace(settings, sell_share=bounded(sell_share, *SELL_SHARE_RANGE))
 
     paused = instructions.get("pause") is True
     return settings, paused

@@ -57,6 +57,7 @@ def test_round_entry_holds_what_the_monitor_needs() -> None:
     assert entry["gold_lost"] == 20
     assert entry["market_price"] == 25.0
     assert entry["margin"] == 0.5
+    assert entry["sell_share"] == 0.02
     assert entry["paused"] is False
     assert entry["response_ms"] == 0.46
     json.dumps(entry)

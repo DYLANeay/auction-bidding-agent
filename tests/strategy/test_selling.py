@@ -1,12 +1,16 @@
-from smaug.agent.config import DEFAULT_SETTINGS, Settings
+from smaug.agent.config import DEFAULT_SETTINGS, NO_SELLING_SETTINGS, Settings
 from smaug.agent.strategy.selling import points_to_sell
 
 SELLING = Settings(sell_share=0.01)
 MID_GAME = 500
 
 
-def test_nothing_is_sold_with_the_factory_settings() -> None:
-    assert points_to_sell(10_000, 40, 20, MID_GAME, DEFAULT_SETTINGS) == 0
+def test_nothing_is_sold_when_selling_is_off() -> None:
+    assert points_to_sell(10_000, 40, 20, MID_GAME, NO_SELLING_SETTINGS) == 0
+
+
+def test_the_factory_settings_sell_two_percent() -> None:
+    assert points_to_sell(10_000, 40, 20, MID_GAME, DEFAULT_SETTINGS) == 200
 
 
 def test_a_small_share_is_sold_when_the_bank_pays_twice_our_price() -> None:

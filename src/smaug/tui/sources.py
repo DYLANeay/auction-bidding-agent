@@ -110,6 +110,8 @@ def agent_summary(entries: list[dict], seconds_since_last_line: float) -> dict |
         "margin": number(last, "margin"),
         "min_expected_value": number(last, "min_expected_value"),
         "history_rounds": int(number(last, "history_rounds")),
+        "sell_share": number(last, "sell_share"),
+        "points_sold": int(number(last, "points_to_spend")),
         "paused": last.get("paused") is True,
         "bids_count": len(bids),
         "bids_gold": bids_gold,

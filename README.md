@@ -61,6 +61,7 @@ price, active settings, pause, response time) next to the scoreboard read from
 | `+` `-` | margin up or down by 5 points |
 | `E` `e` | min EV up or down by 1 |
 | `W` `w` | price window up or down by 5 rounds |
+| `s` | point selling off, or back on at the default setting |
 | `p` | pause (press twice to confirm) or resume |
 | `1` `2` `3` | presets: normal, mixed class, first version |
 | `0` | back to the default settings |
@@ -75,6 +76,7 @@ restarting it, write `logs/control.json`; it is read every round:
 {"margin": 0.5, "min_expected_value": 2, "history_rounds": 10, "pause": false}
 ```
 
+`"sell_share": 0` switches point selling off (at most 0.05, 5% of the points per round).
 Every key is optional and every value is bounded. Remove a key, or write `{}`, to go back
 to the defaults (deleting the file keeps the last instructions). `"pause": true` keeps the
 agent connected but sends no bids.

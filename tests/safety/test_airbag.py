@@ -3,7 +3,7 @@ from typing import Any
 
 import numpy as np
 
-from smaug.agent.config import Settings
+from smaug.agent.config import NO_SELLING_SETTINGS, Settings
 from smaug.agent.safety.airbag import play_round, safe_decide, safe_sale
 from smaug.agent.safety.game_round import Round
 from smaug.agent.strategy.brain import Brain
@@ -70,10 +70,12 @@ def test_a_crashing_sale_never_touches_the_bids() -> None:
 
 def test_play_round_sells_only_when_selling_is_on() -> None:
     message = make_message(points=20_000)
-    assert play_round(Brain(), message, "me")["points_to_spend"] == 0
+    assert play_round(Brain(NO_SELLING_SETTINGS), message, "me")["points_to_spend"] == 0
     # prix du marché par défaut 20, la banque paie 60 : 3 fois notre prix
     answer = play_round(Brain(Settings(sell_share=0.01)), message, "me")
     assert answer["points_to_spend"] == 200
+    # les réglages de la bataille vendent 2 %
+    assert play_round(Brain(), message, "me")["points_to_spend"] == 400
     assert "a41" in answer["bids"]
 
 

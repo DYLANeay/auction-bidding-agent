@@ -7,7 +7,7 @@ from multiprocessing import Pool
 from pathlib import Path
 from statistics import mean
 
-from smaug.agent.config import DEFAULT_SETTINGS, V1_SETTINGS
+from smaug.agent.config import DEFAULT_SETTINGS, NO_SELLING_SETTINGS, V1_SETTINGS
 from smaug.sim.classes import CLASSES, OUR_NAME
 from smaug.sim.engine import play_game
 from smaug.sim.grades import grade_for
@@ -16,6 +16,7 @@ from smaug.sim.players import Player
 # "current" suit les réglages par défaut ; les autres variantes partent de la première version (v1)
 VARIANTS = {
     "current": DEFAULT_SETTINGS,
+    "no selling": NO_SELLING_SETTINGS,
     "v1": V1_SETTINGS,
     # étape 2 : un seul réglage change par rapport à la v1
     "min EV 4": replace(V1_SETTINGS, min_expected_value=4),
