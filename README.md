@@ -79,6 +79,9 @@ Every key is optional and every value is bounded. Remove a key, or write `{}`, t
 to the defaults (deleting the file keeps the last instructions). `"pause": true` keeps the
 agent connected but sends no bids.
 
+At startup, `make battle` shows any instructions left in the file and clears them unless
+you answer `y`, so a rehearsal never leaks into a real game.
+
 ## Layout
 
 ```

@@ -6,6 +6,7 @@ import time
 from pathlib import Path
 
 from smaug.agent.connection.guard import is_previous_game_over, may_connect
+from smaug.agent.connection.leftover import clear_unless_kept, leftover_instructions
 from smaug.agent.connection.reconnect import RETRY_DELAY_SECONDS, should_call_back
 from smaug.agent.connection.safe_client import SafeClient
 from smaug.agent.connection.settings import read_connection_settings
@@ -25,10 +26,15 @@ def main() -> None:
         print("Not connecting, the scoreboard stays as it is.")
         return
 
+    # une consigne oubliée après une répétition ne doit pas jouer la vraie partie en silence
+    control_path = Path("logs") / "control.json"
+    if clear_unless_kept(control_path, leftover_instructions(control_path), input):
+        print("Cleared logs/control.json, playing with the default settings.")
+
     # un seul cerveau et un seul journal pour toute la partie, même après une reconnexion
     # pas de préfixe "agent_" : c'est celui des logs du client du prof
     logbook_path = Path("logs") / f"logbook_{settings.name}_{time.strftime('%Y%m%d_%H%M%S')}.jsonl"
-    client = SafeClient(settings, Brain(), logbook_path, Path("logs") / "control.json")
+    client = SafeClient(settings, Brain(), logbook_path, control_path)
     last_rounds_left = None
     last_message_at = None
 
