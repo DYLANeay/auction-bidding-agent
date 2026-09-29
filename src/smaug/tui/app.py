@@ -1,4 +1,4 @@
-"""The monitor: our agent's live signals next to the game's scoreboard (think: the control tower's screens)"""
+"""The monitor: my agent's live signals next to the game's scoreboard, with a few levers (think: the control tower)"""
 
 import argparse
 import os
@@ -10,8 +10,10 @@ from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.widgets import DataTable, Sparkline, Static
 
+from smaug.tui.controls import describe, nudge, read_instructions, with_pause, with_preset, write_instructions
 from smaug.tui.panels import (
     agent_text,
+    control_text,
     game_text,
     ranking_row,
     statusline_left,
@@ -23,12 +25,27 @@ from smaug.tui.style import CSS
 
 
 class MonitorApp(App):
-    """Refreshes both panels every second, reading only: it never writes anything"""
+    """Refreshes both panels every second; the only file it ever writes is logs/control.json"""
 
     TITLE = "Monitor"
     CSS = CSS
-    BINDINGS = [("q", "quit", "Quit")]
+    BINDINGS = [
+        ("q", "quit", "Quit"),
+        ("plus,equals_sign", "lever('margin', 1)", "margin up"),
+        ("minus", "lever('margin', -1)", "margin down"),
+        ("E", "lever('min_expected_value', 1)", "min EV up"),
+        ("e", "lever('min_expected_value', -1)", "min EV down"),
+        ("W", "lever('history_rounds', 1)", "window up"),
+        ("w", "lever('history_rounds', -1)", "window down"),
+        ("p", "pause", "pause or resume"),
+        ("1", "preset('normal')", "normal"),
+        ("2", "preset('mixed')", "mixed class"),
+        ("3", "preset('v1')", "first version"),
+        ("0", "reset", "factory settings"),
+    ]
     ENABLE_COMMAND_PALETTE = False
+    # le temps pour confirmer une pause en rappuyant sur p
+    PAUSE_CONFIRM_SECONDS = 3.0
 
     def __init__(self, host: str, port: int, our_name: str, logs_folder: Path) -> None:
         super().__init__()
@@ -36,12 +53,15 @@ class MonitorApp(App):
         self.port = port
         self.our_name = our_name
         self.logs_folder = logs_folder
+        self.control_path = logs_folder / "control.json"
+        self.pause_armed_until = 0.0
 
     def compose(self) -> ComposeResult:
         yield Static(tabline(), id="tabline")
         with Horizontal(id="body"):
             with Vertical(id="agent-panel", classes="panel"):
                 yield Static(id="agent")
+                yield Static(id="control")
                 yield Static("market price, last 120 rounds", classes="chart-label")
                 yield Sparkline([], id="market")
                 yield Static("gold, last 120 rounds", classes="chart-label")
@@ -79,6 +99,7 @@ class MonitorApp(App):
 
     def show(self, agent: dict | None, game: dict | None) -> None:
         self.query_one("#agent", Static).update(agent_text(agent))
+        self.show_control()
         # le journal lu, pour voir tout de suite si c'est bien celui de la partie en cours
         logbook_name = "no logbook yet"
         if agent is not None:
@@ -104,6 +125,67 @@ class MonitorApp(App):
         self.query_one("#statusline-right", Static).update(
             statusline_right(server, clock, game is not None)
         )
+
+    def show_control(self) -> None:
+        if self.control_path.exists():
+            description = describe(read_instructions(self.control_path))
+        else:
+            description = "no file yet: factory settings"
+        pause_armed = time.monotonic() < self.pause_armed_until
+        self.query_one("#control", Static).update(control_text(description, pause_armed))
+
+    def send(self, change: str, update) -> None:
+        """Reads control.json, applies one change and writes it back whole"""
+        instructions = read_instructions(self.control_path)
+        if instructions is None:
+            self.notify("control.json was unreadable, starting again from the factory settings", severity="warning")
+            instructions = {}
+        updated = update(instructions)
+        if write_instructions(self.control_path, updated):
+            self.notify(f"{change}: {describe(updated)}", title="sent to the agent")
+        else:
+            self.notify(f"could not write {self.control_path}", severity="error")
+        self.show_control()
+
+    def action_lever(self, lever: str, direction: int) -> None:
+        def update(instructions: dict) -> dict:
+            return nudge(instructions, lever, direction)
+
+        self.send(lever.replace("_", " "), update)
+
+    def action_preset(self, preset: str) -> None:
+        def update(instructions: dict) -> dict:
+            return with_preset(instructions, preset)
+
+        self.send(f"preset {preset}", update)
+
+    def action_reset(self) -> None:
+        def update(instructions: dict) -> dict:
+            return {}
+
+        self.send("factory settings", update)
+
+    def action_pause(self) -> None:
+        instructions = read_instructions(self.control_path)
+        paused = instructions is not None and instructions.get("pause") is True
+        if paused:
+            def resume(current: dict) -> dict:
+                return with_pause(current, False)
+
+            self.send("resume", resume)
+            return
+        # une pause gèle l'agent : on demande de rappuyer pour confirmer
+        if time.monotonic() < self.pause_armed_until:
+            self.pause_armed_until = 0.0
+
+            def pause(current: dict) -> dict:
+                return with_pause(current, True)
+
+            self.send("pause", pause)
+            return
+        self.pause_armed_until = time.monotonic() + self.PAUSE_CONFIRM_SECONDS
+        self.notify("press p again within 3 seconds to pause the agent", severity="warning")
+        self.show_control()
 
 
 def main() -> None:

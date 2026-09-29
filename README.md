@@ -51,9 +51,20 @@ In a second terminal, while the agent plays:
 make monitor
 ```
 
-It shows our agent's signals from `logs/logbook_*.jsonl` (win rate, gold lost, market
+It shows my agent's signals from `logs/logbook_*.jsonl` (win rate, gold lost, market
 price, active settings, pause, response time) next to the scoreboard read from
-`/api/leadboard`. It only reads, and the agent never depends on it.
+`/api/leadboard`. It never talks to the agent directly: its keys only write
+`logs/control.json`, which the agent reads and bounds every round.
+
+| Key | Effect |
+|-----|--------|
+| `+` `-` | margin up or down by 5 points |
+| `E` `e` | min EV up or down by 1 |
+| `W` `w` | price window up or down by 5 rounds |
+| `p` | pause (press twice to confirm) or resume |
+| `1` `2` `3` | presets: normal, mixed class, first version |
+| `0` | back to the default settings |
+| `q` | quit the monitor (the agent keeps playing) |
 
 ## Live control
 
