@@ -17,6 +17,7 @@ from smaug.tui.style import (
     HINT,
     MAGENTA,
     MUTED,
+    ORANGE,
     RED,
     SEPARATOR_LEFT,
     SEPARATOR_RIGHT,
@@ -213,9 +214,34 @@ def statusline_right(server: str, clock: str, connected: bool) -> Text:
     return line
 
 
+KEYS = [
+    ("+ -", "margin"),
+    ("e E", "min EV"),
+    ("w W", "window"),
+    ("p", "pause"),
+    ("1", "normal"),
+    ("2", "mixed"),
+    ("3", "v1"),
+    ("0", "reset"),
+    ("q", "quit"),
+]
+
+
 def tabline() -> Text:
     line = Text()
     segment(line, "SMAUG", BLUE, BACKGROUND, BACKGROUND_HIGHLIGHT, bold=True)
     segment(line, "monitor", BACKGROUND_HIGHLIGHT, BLUE, BACKGROUND_DARK)
-    line.append("  q quit", style=f"{COMMENT} on {BACKGROUND_DARK}")
+    for key, label in KEYS:
+        line.append(f"  {key}", style=f"bold {BLUE} on {BACKGROUND_DARK}")
+        line.append(f" {label}", style=f"{COMMENT} on {BACKGROUND_DARK}")
     return line
+
+
+def control_text(description: str, pause_armed: bool) -> Text:
+    """What logs/control.json asks for right now"""
+    lines = Text()
+    heading(lines, "Control", ORANGE)
+    row(lines, "control.json", description, ORANGE)
+    if pause_armed:
+        lines.append("  press p again to pause the agent\n", style=f"bold {BACKGROUND} on {YELLOW}")
+    return lines

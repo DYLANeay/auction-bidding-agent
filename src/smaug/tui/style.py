@@ -101,4 +101,11 @@ Sparkline {{
 
 #ranking > .datatable--odd-row {{ background: {BACKGROUND}; }}
 #ranking > .datatable--even-row {{ background: {BACKGROUND_ROW}; }}
+
+Toast {{
+    background: {BACKGROUND_HIGHLIGHT};
+    color: {FOREGROUND};
+}}
+
+.toast--title {{ color: {BLUE}; }}
 """
