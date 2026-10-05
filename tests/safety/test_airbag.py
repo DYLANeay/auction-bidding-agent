@@ -3,13 +3,20 @@ from typing import Any
 
 import numpy as np
 
-from smaug.agent.safety.airbag import play_round, safe_decide
+from smaug.agent.config import NO_SELLING_SETTINGS, Settings
+from smaug.agent.safety.airbag import play_round, safe_decide, safe_sale
+from smaug.agent.safety.game_round import Round
 from smaug.agent.strategy.brain import Brain
 
 
 class BrokenBrain(Brain):
     def decide(self, gold, auctions, prev_auctions, bank_state):
         raise ZeroDivisionError("bug in the brain")
+
+
+class BrokenSeller(Brain):
+    def decide_sale(self, points, gold_per_point, bank_state):
+        raise ZeroDivisionError("bug in the sale")
 
 
 class SloppyBrain(Brain):
@@ -50,9 +57,32 @@ def test_play_round_always_answers_something_valid() -> None:
         assert answer == {"bids": {}, "points_to_spend": 0}
 
 
-def make_message(gold: Any = 7200) -> str:
+def test_safe_sale_sells_nothing_when_the_sale_crashes() -> None:
+    current_round = Round(9000, AUCTIONS, {}, BANK_STATE, points=20_000, gold_per_point=60.0)
+    assert safe_sale(BrokenSeller(Settings(sell_share=0.05)), current_round) == 0
+
+
+def test_a_crashing_sale_never_touches_the_bids() -> None:
+    answer = play_round(BrokenSeller(Settings(sell_share=0.05)), make_message(points=20_000), "me")
+    assert answer["points_to_spend"] == 0
+    assert "a41" in answer["bids"]
+
+
+def test_play_round_sells_only_when_selling_is_on() -> None:
+    message = make_message(points=20_000)
+    assert play_round(Brain(NO_SELLING_SETTINGS), message, "me")["points_to_spend"] == 0
+    # prix du marché par défaut 20, la banque paie 60 : 3 fois notre prix
+    answer = play_round(Brain(Settings(sell_share=0.01)), message, "me")
+    assert answer["points_to_spend"] == 200
+    # les réglages de la bataille vendent 2 %
+    assert play_round(Brain(), message, "me")["points_to_spend"] == 400
+    assert "a41" in answer["bids"]
+
+
+def make_message(gold: Any = 7200, points: int = 0) -> str:
     return json.dumps({
-        "states": {"me": {"gold": gold, "points": 0}},
+        "states": {"me": {"gold": gold, "points": points}},
+        "gold_per_point": 60.0,
         "auctions": {"a41": {"die": 12, "num": 4, "bonus": 2}},
         "prev_auctions": {},
         "remainder_gold_income": [1000] * 500,

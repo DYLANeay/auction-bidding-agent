@@ -7,7 +7,9 @@ from smaug.agent.safety.incoming import (
     read_bank_state,
     read_bids,
     read_gold,
+    read_gold_per_point,
     read_number_list,
+    read_points,
     read_prev_auctions,
     read_round,
 )
@@ -94,9 +96,26 @@ def test_read_gold_finds_our_gold_or_gives_up() -> None:
     assert read_gold(None, "me") is None
 
 
+def test_read_points_finds_our_points_or_says_zero() -> None:
+    states = {"me": {"gold": 7200, "points": 30}, "other": {"gold": 100, "points": 5}}
+    assert read_points(states, "me") == 30
+    assert read_points(states, "ghost") == 0
+    for junk in [None, -10, "lots", float("nan"), True]:
+        assert read_points({"me": {"points": junk}}, "me") == 0
+    assert read_points(None, "me") == 0
+
+
+def test_read_gold_per_point_keeps_a_sane_rate_or_says_zero() -> None:
+    assert read_gold_per_point(37.5) == 37.5
+    assert read_gold_per_point("12") == 12.0
+    for junk in [None, -3, "high", float("inf"), False]:
+        assert read_gold_per_point(junk) == 0.0
+
+
 def make_message(gold: Any = 7200) -> str:
     return json.dumps({
-        "states": {"me": {"gold": gold, "points": 0}},
+        "states": {"me": {"gold": gold, "points": 250}},
+        "gold_per_point": 37.5,
         "auctions": {"a41": {"die": 12, "num": 4, "bonus": 2}},
         "prev_auctions": {},
         "remainder_gold_income": [1000] * 500,
@@ -110,6 +129,19 @@ def test_read_round_gives_a_clean_round() -> None:
     assert current_round is not None
     assert current_round.gold == 7200
     assert current_round.auctions == {"a41": {"die": 12, "num": 4, "bonus": 2}}
+    assert current_round.points == 250
+    assert current_round.gold_per_point == 37.5
+
+
+def test_a_round_without_sale_information_is_still_played() -> None:
+    message = json.loads(make_message())
+    del message["gold_per_point"]
+    del message["states"]["me"]["points"]
+    current_round = read_round(json.dumps(message), "me")
+    assert current_round is not None
+    assert current_round.gold == 7200
+    assert current_round.points == 0
+    assert current_round.gold_per_point == 0.0
 
 
 def test_read_round_skips_broken_messages() -> None:

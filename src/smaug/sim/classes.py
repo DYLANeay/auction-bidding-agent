@@ -3,7 +3,7 @@
 import random
 from dataclasses import replace
 
-from smaug.agent.config import DEFAULT_SETTINGS, Settings
+from smaug.agent.config import DEFAULT_SETTINGS, NO_SELLING_SETTINGS, Settings
 from smaug.agent.strategy.brain import Brain
 from smaug.sim.players import OurAgent, Player
 from smaug.sim.teacher_agents import random_single, random_walk, tiny_bid
@@ -23,8 +23,9 @@ def teacher_agent(number: int) -> Player:
 
 # but : notre agent avec d'autres réglages, comme un élève qui a eu la même idée que nous
 def clone(number: int) -> Player:
+    # les clones ne vendent pas, comme lors du tournoi de la vente
     settings = replace(
-        DEFAULT_SETTINGS,
+        NO_SELLING_SETTINGS,
         margin=random.uniform(0, 0.5),
         reserve_factor=random.uniform(0, 1.5),
         history_rounds=random.randint(5, 50),

@@ -62,3 +62,12 @@ def test_settings_for_this_round_follow_the_file(tmp_path) -> None:
     settings, paused = settings_for_this_round(control_file, DEFAULT_SETTINGS)
     assert settings.margin == 0.5
     assert paused is True
+
+
+def test_apply_control_can_switch_selling_off_and_bounds_it() -> None:
+    settings, _ = apply_control(DEFAULT_SETTINGS, {"sell_share": 0})
+    assert settings.sell_share == 0.0
+    settings, _ = apply_control(DEFAULT_SETTINGS, {"sell_share": 50})
+    assert settings.sell_share == 0.05
+    settings, _ = apply_control(DEFAULT_SETTINGS, {"sell_share": "off"})
+    assert settings.sell_share == DEFAULT_SETTINGS.sell_share

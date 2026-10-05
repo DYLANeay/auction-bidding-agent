@@ -20,6 +20,7 @@ PRESETS = {
         "min_expected_value": V1_SETTINGS.min_expected_value,
         "margin": V1_SETTINGS.margin,
         "history_rounds": V1_SETTINGS.history_rounds,
+        "sell_share": 0.0,
     },
 }
 
@@ -94,6 +95,24 @@ def with_pause(instructions: dict, paused: bool) -> dict:
     return updated
 
 
+def is_selling(instructions: dict) -> bool:
+    """False only when control.json switches selling off"""
+    value = instructions.get("sell_share")
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return True
+    return value > 0
+
+
+def with_selling(instructions: dict, selling: bool) -> dict:
+    """Selling back to the factory setting, or switched off"""
+    updated = dict(instructions)
+    if selling:
+        updated.pop("sell_share", None)
+    else:
+        updated["sell_share"] = 0.0
+    return updated
+
+
 def describe(instructions: dict | None) -> str:
     """control.json in a few words, for the screen"""
     if instructions is None:
@@ -107,6 +126,8 @@ def describe(instructions: dict | None) -> str:
         parts.append(f"min EV {current_value(instructions, 'min_expected_value'):g}")
     if "history_rounds" in instructions:
         parts.append(f"window {current_value(instructions, 'history_rounds'):.0f}")
+    if not is_selling(instructions):
+        parts.append("selling off")
     if instructions.get("pause") is True:
         parts.append("PAUSE")
     if len(parts) == 0:

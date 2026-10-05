@@ -4,6 +4,7 @@ from smaug.agent.config import DEFAULT_SETTINGS, Settings
 from smaug.agent.strategy.bidding import choose_bids
 from smaug.agent.strategy.market import market_price, round_price_per_point
 from smaug.agent.strategy.planning import current_margin, reserve, spending_budget
+from smaug.agent.strategy.selling import points_to_sell
 
 
 class Brain:
@@ -46,3 +47,9 @@ class Brain:
         is_last_useful_round = rounds_left == 2
 
         return choose_bids(auctions, budget, price, margin, self.settings, is_last_useful_round)
+
+    def decide_sale(self, points: int, gold_per_point: float, bank_state: dict[str, list]) -> int:
+        """Points to sell to the bank this round, 0 most of the time"""
+        rounds_left = len(bank_state["gold_income_per_round"])
+        price = market_price(self.price_history, self.settings.default_price)
+        return points_to_sell(points, gold_per_point, price, rounds_left, self.settings)
