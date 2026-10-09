@@ -12,7 +12,7 @@ locally, the teacher's example agents as opponents, and my agent with its defaul
 | Network cut | a relay between my agent and the server, cut for 20 seconds at round 100 of 300 | passed: back with the same identity, 2nd of 6 (B) |
 | End of the game | let the game finish | passed: the agent stopped by itself, no call back |
 | Relaunch after the end | start the agent again once the game is over, answer `n` | passed: it asked first, the scoreboard stayed untouched |
-| Killed process | `kill -9` at round 30, then start the agent again | partly: no crash, but refused locally (see limits) |
+| Killed process | `kill -9` at round 30, then start the agent again | partly: no crash, but refused locally (see limits); passed over TLS on 6 October (see below) |
 
 ## Full rehearsal in numbers
 
@@ -32,8 +32,8 @@ and points kept. It missed 20 rounds and then played normally until the end.
 - On `localhost`, the teacher's client draws a new random identity at each start
   (`client.py`, lines 39 to 44), so an agent started again after `kill -9` counts as a new
   player and is refused in the middle of a game. On the real server the identity comes from
-  the machine, so the same restart is a reconnection, which the network cut test shows the
-  server accepts. This will be checked on the teacher's test server.
+  the machine, so the same restart is a reconnection. This was checked on 6 October with an
+  encrypted connection (see below).
 - The opponents are the teacher's example agents, not the real class.
 - Trapped messages from the server are covered by the crash test (10,000 random or broken
   messages), not by these games.
@@ -50,3 +50,16 @@ pays at least twice its market price), no intervention:
 - 274 sales, 123,108 points sold in total and bought back at auction with the gold; the last
   sale came 112 rounds before the end, as the rule forbids selling in the last 110 rounds
 - response time: median 0.43 ms, 99% under 0.69 ms, slowest 0.87 ms
+
+## Encrypted connection and killed process, 6 October
+
+The teacher's README now describes a server behind TLS (`wss://`, `https://`) with a
+certificate for its domain name. I ran the teacher's server with TLS on my laptop under the
+name `smaug.localhost` (which points to my own machine), with a test certificate:
+
+- my agent connected over `wss://` and checked the certificate; an unknown certificate is
+  refused without a crash
+- it used the identity derived from the machine, as on the real server
+- `kill -9` at round 41, then a restart: the server logged `Agent Dylan reconnected` and
+  the agent kept its 372 points, then played until the end
+- the control panel and the start-up guard read the scoreboard over `https`
